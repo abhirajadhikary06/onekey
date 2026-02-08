@@ -27,10 +27,10 @@ Securely store, manage, rotate, and call **multiple AI/LLM API keys** (OpenAI, A
     <img src="images/8079.png" alt="Usage Over Time" width="350">
   </div>
   <div style="flex: 1 1 45%;">
-    <img src="65030.png" alt="CLI Installation and Commands" width="350">
+    <img src="images/65030.png" alt="CLI Installation and Commands" width="350">
   </div>
   <div style="flex: 1 1 45%;">
-    <img src="91759.png" alt="CLI Features" width="350">
+    <img src="images/91759.png" alt="CLI Features" width="350">
   </div>
 </div>
 
