@@ -40,6 +40,29 @@ Securely store, manage, rotate, and call **multiple AI/LLM API keys** (OpenAI, A
 </table>
 </div>
 
+## Command Line Interface Screenshots
+
+<div align="center">
+<table>
+  <tr>
+    <td align="center" style="padding: 10px;">
+      <img src="images/SCR-20260208-uepj.png" alt="Add New API Key and Usage Overview" width="350">
+    </td>
+    <td align="center" style="padding: 10px;">
+      <img src="images/60265.png" alt="Usage Over Time" width="350">
+    </td>
+  </tr>
+  <tr>
+    <td align="center" style="padding: 10px;">
+      <img src="images/89036.png" alt="CLI Installation and Commands" width="350">
+    </td>
+    <td align="center" style="padding: 10px;">
+      <img src="images/3647.png" alt="CLI Features" width="350">
+    </td>
+  </tr>
+</table>
+</div>
+
 ## The Problem Developers Face Every Day
 
 Juggling **10–50+ API keys** across providers is painful:
