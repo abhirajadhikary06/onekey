@@ -11,3 +11,4 @@ requests>=2.32.0
 argon2-cffi
 python_multipart
 psycopg2
+onekey-cli

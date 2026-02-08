@@ -23,6 +23,8 @@ app = typer.Typer(
     no_args_is_help=True,
 )
 
+__version__ = "0.1.0"
+
 # Config
 BASE_URL = "https://onekey-8pr2.onrender.com"  # production URL later
 CONFIG_FILE = Path.home() / ".onekey" / "config.json"
