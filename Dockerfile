@@ -1,4 +1,4 @@
-# Multi-stage Dockerfile for Zerokey API Vault
+# Multi-stage Dockerfile for onekey API Vault
 # Stage 1: Build stage
 FROM python:3.11-alpine AS builder
 

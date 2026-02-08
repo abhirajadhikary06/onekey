@@ -5,7 +5,7 @@ from .database import engine, Base, run_simple_migrations
 from . import vault, proxy, usage, auth   # ← add auth
 from fastapi.responses import RedirectResponse
 
-app = FastAPI(title="Zerokey API Vault MVP")
+app = FastAPI(title="onekey API Vault MVP")
 
 Base.metadata.create_all(bind=engine)
 run_simple_migrations()

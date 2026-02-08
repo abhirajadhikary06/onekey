@@ -7,13 +7,13 @@ import sys
 def build_for_platform():
     system = sys.platform
     if system == "win32":
-        name = "zerokey.exe"
+        name = "onekey.exe"
         opts = ["--onefile", "--windowed"]  # --windowed hides console on Windows (optional)
     elif system == "darwin":
-        name = "zerokey-macos"
+        name = "onekey-macos"
         opts = ["--onefile"]
     else:  # linux
-        name = "zerokey-linux"
+        name = "onekey-linux"
         opts = ["--onefile"]
 
     print(f"Building for {system} → {name}")

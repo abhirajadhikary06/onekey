@@ -1,4 +1,4 @@
-# Zerokey build artifacts
+# onekey build artifacts
 __pycache__/
 *.py[cod]
 *$py.class

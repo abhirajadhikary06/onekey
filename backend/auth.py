@@ -296,7 +296,7 @@ def github_callback(
             html = f"""
             <html>
                 <head>
-                    <title>Zerokey CLI Login</title>
+                    <title>onekey CLI Login</title>
                     <style>
                         body {{ font-family: Arial, sans-serif; max-width: 720px; margin: 40px auto; padding: 0 16px; }}
                         pre {{ background: #0f172a; color: #e2e8f0; padding: 12px; border-radius: 8px; overflow-x: auto; }}
@@ -480,7 +480,7 @@ def gitlab_callback(
             html = f"""
             <html>
                 <head>
-                    <title>Zerokey CLI Login</title>
+                    <title>onekey CLI Login</title>
                     <style>
                         body {{ font-family: Arial, sans-serif; max-width: 720px; margin: 40px auto; padding: 0 16px; }}
                         pre {{ background: #0f172a; color: #e2e8f0; padding: 12px; border-radius: 8px; overflow-x: auto; }}
@@ -663,7 +663,7 @@ def bitbucket_callback(
             html = f"""
             <html>
                 <head>
-                    <title>Zerokey CLI Login</title>
+                    <title>onekey CLI Login</title>
                     <style>
                         body {{ font-family: Arial, sans-serif; max-width: 720px; margin: 40px auto; padding: 0 16px; }}
                         pre {{ background: #0f172a; color: #e2e8f0; padding: 12px; border-radius: 8px; overflow-x: auto; }}

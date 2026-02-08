@@ -1,13 +1,13 @@
 <div align="center">
 
-# zerokey
+# onekey
 
 **Unified API Key Management for Developers**  
 Securely store, manage, rotate, and call **multiple AI/LLM API keys** (OpenAI, Anthropic, Groq, Gemini, and more) from one place — with zero plaintext leaks and unified interface.
 
 [![Python](https://img.shields.io/badge/Python-3.8+-3776AB?style=flat&logo=python&logoColor=white)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![CLI on PyPI](https://img.shields.io/pypi/v/zerokey-cli?label=zerokey-cli&logo=pypi)](https://pypi.org/project/zerokey-cli/) <!-- update when published -->
+[![CLI on PyPI](https://img.shields.io/pypi/v/onekey-cli?label=onekey-cli&logo=pypi)](https://pypi.org/project/onekey-cli/) <!-- update when published -->
 
 </div>
 
@@ -21,27 +21,27 @@ Juggling **10–50+ API keys** across providers is painful:
 - No visibility into usage → surprise bills, no idea which key is burning tokens
 - Hard to rotate or expire keys → manual, error-prone process
 
-**ZeroKey solves all of this** — one secure vault, one unified interface, beautiful CLI + web dashboard, **zero vendor lock-in**.
+**onekey solves all of this** — one secure vault, one unified interface, beautiful CLI + web dashboard, **zero vendor lock-in**.
 
 ## Key Features
 
 - **AES-256 client-side encryption** — keys never touch the server in plaintext
 - **Deployment** - Render
 - **Unified proxy** — call any provider with the same format (`/proxy/u/<provider>/<slug>`)
-- **CLI power tool** (`zerokey`): add, list, delete, call, usage — with **Rich** beautiful tables, sparklines & panels
+- **CLI power tool** (`onekey`): add, list, delete, call, usage — with **Rich** beautiful tables, sparklines & panels
 - **Automatic provider detection** (e.g. `sk-` → OpenAI)
 - **Built-in usage tracking** — tokens used, latency, status codes, errors — per key/provider
 - **Flexible auth** — JWT (username/password) + OAuth (GitHub / GitLab)
 - **Normalized responses** — consistent output across OpenAI, Groq, Anthropic, Gemini ...
-- **CLI for fast development** — install via `pipx install zerokey-cli`, works everywhere (macOS/Linux/Windows)
+- **CLI for fast development** — install via `pipx install onekey-cli`, works everywhere (macOS/Linux/Windows)
 
 ## Architecture
 
 ```
-zerokey/
+onekey/
 ├── backend/          # FastAPI server (auth, vault, proxy, usage)
 ├── frontend/         # frontend on valinna js , HTML and css
-├── zerokey_cli/      # Typer + Rich CLI (published as zerokey-cli on PyPI)
+├── onekey_cli/      # Typer + Rich CLI (published as onekey-cli on PyPI)
 ├── Dockerfile        # Easy containerization
 └── ... (pyproject.toml, requirements.txt, etc.)
 ```
@@ -56,18 +56,18 @@ zerokey/
 ### 1. CLI (recommended for daily use)
 
 ```bash
-pipx install zerokey-cli    # install the pypy package
+pipx install onekey-cli    # install the pypy package
 
-zerokey login               # OAuth or username/password
-zerokey add-key             # Add your OpenAI / Groq / etc. key
-zerokey ls                  # Beautiful table of all keys
-zerokey call <unified_key>   # Test call using unified key
-zerokey usage               # Usage overview with sparklines
+onekey login               # OAuth or username/password
+onekey add-key             # Add your OpenAI / Groq / etc. key
+onekey ls                  # Beautiful table of all keys
+onekey call <unified_key>   # Test call using unified key
+onekey usage               # Usage overview with sparklines
 ```
 
 ### 2. Full stack (fastAPI backend + interactive Vanilla JS frontend)
 
-- hosted link : https://zerokey.onrender.com/
+- hosted link : https://onekey.onrender.com/
 
 Default: backend on `http://localhost:8000`, frontend proxies to it.
 
@@ -94,5 +94,5 @@ Default: backend on `http://localhost:8000`, frontend proxies to it.
 ---
 
 Built with ❤️ by **[Anik Chand](https://github.com/anikchand461)** and **[Abhiraj Adhikary](https://github.com/abhirajadhikary06)**
-**ZeroKey** — because your keys deserve better than a `.env` file.
+**onekey** — because your keys deserve better than a `.env` file.
 

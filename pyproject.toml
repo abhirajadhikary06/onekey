@@ -4,7 +4,7 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "zerokey-cli"
+name = "onekey-cli"
 version = "0.1.0"
 description = "Secure & unified API key management for developers"
 readme = "README.md"
@@ -33,13 +33,13 @@ dependencies = [
 requires-python = ">=3.8"
 
 [project.urls]
-Homepage = "https://github.com/anikchand461/zerokey"
-Repository = "https://github.com/anikchand461/zerokey"
+Homepage = "https://github.com/anikchand461/onekey"
+Repository = "https://github.com/anikchand461/onekey"
 
 [project.scripts]
-zerokey = "zerokey_cli:app"
+onekey = "onekey_cli:app"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["zerokey_cli"]
+include = ["onekey_cli"]
 exclude = ["backend*", "frontend*", "release*", "tests*"]

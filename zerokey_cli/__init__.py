@@ -17,15 +17,15 @@ import click
 console = Console()
 
 app = typer.Typer(
-    name="zerokey",
-    help="Zerokey CLI - Secure & unified API key management",
+    name="onekey",
+    help="onekey CLI - Secure & unified API key management",
     add_completion=False,
     no_args_is_help=True,
 )
 
 # Config
-BASE_URL = "https://zerokey.onrender.com"  # Change to production URL later
-CONFIG_FILE = Path.home() / ".zerokey" / "config.json"
+BASE_URL = "https://onekey.onrender.com"  # Change to production URL later
+CONFIG_FILE = Path.home() / ".onekey" / "config.json"
 CONFIG_FILE.parent.mkdir(parents=True, exist_ok=True)
 
 def save_token(token: str):
@@ -39,7 +39,7 @@ def load_token() -> Optional[str]:
 def get_headers() -> dict:
     token = load_token()
     if not token:
-        console.print("[bold red]✗ Not logged in. Run:[/bold red] zerokey login")
+        console.print("[bold red]✗ Not logged in. Run:[/bold red] onekey login")
         raise typer.Exit(1)
     return {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
 
@@ -63,7 +63,7 @@ def register():
             r = requests.post(f"{BASE_URL}/auth/register", json=payload)
             r.raise_for_status()
             console.print(Panel(
-                "[bold green]✓ Account created successfully![/bold green]\nNow login with zerokey login",
+                "[bold green]✓ Account created successfully![/bold green]\nNow login with onekey login",
                 title="Success",
                 border_style="green",
                 expand=False
@@ -279,10 +279,10 @@ def list_keys():
         keys = r.json()
 
         if not keys:
-            console.print(Panel("[yellow]No keys stored yet. Add one with 'zerokey add-key'[/yellow]", border_style="yellow"))
+            console.print(Panel("[yellow]No keys stored yet. Add one with 'onekey add-key'[/yellow]", border_style="yellow"))
             return
 
-        table = Table(title="Your Zerokey Vault", show_header=True, header_style="bold magenta", box=ROUNDED)
+        table = Table(title="Your onekey Vault", show_header=True, header_style="bold magenta", box=ROUNDED)
         table.add_column("Sl. No.", style="cyan bold", justify="center")
         table.add_column("Name", style="bold white")
         table.add_column("Provider", style="green")
@@ -306,7 +306,7 @@ def list_keys():
         console.print(f"[red]✗ Failed to load keys: {e.response.json().get('detail', 'Unknown error')}[/red]")
 
 @app.command()
-def delete(sl_no: int = typer.Argument(..., help="Serial number from 'zerokey ls'")):
+def delete(sl_no: int = typer.Argument(..., help="Serial number from 'onekey ls'")):
     """Delete an API key using its serial number"""
     try:
         r = requests.get(f"{BASE_URL}/keys", headers=get_headers())
@@ -374,7 +374,7 @@ def sparkline(values: List[int], width: int = 50, height: int = 8) -> str:
     return "\n".join(lines)
 
 @app.command()
-def usage(sl_no: Optional[int] = typer.Argument(None, help="Serial number from 'zerokey ls' (optional)")):
+def usage(sl_no: Optional[int] = typer.Argument(None, help="Serial number from 'onekey ls' (optional)")):
     """Show beautiful usage curve for all keys or specific key"""
     try:
         if sl_no is None:
@@ -387,7 +387,7 @@ def usage(sl_no: Optional[int] = typer.Argument(None, help="Serial number from '
             keys_r.raise_for_status()
             keys = keys_r.json()
             if sl_no < 1 or sl_no > len(keys):
-                console.print(f"[red]Invalid serial number. Run 'zerokey ls' first.[/red]")
+                console.print(f"[red]Invalid serial number. Run 'onekey ls' first.[/red]")
                 raise typer.Exit(1)
             key_id = keys[sl_no - 1]["id"]
             key_name = keys[sl_no - 1]["name"]
