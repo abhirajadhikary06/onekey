@@ -67,7 +67,7 @@ onekey usage               # Usage overview with sparklines
 
 ### 2. Full stack (fastAPI backend + interactive Vanilla JS frontend)
 
-- hosted link : https://onekey.onrender.com/
+- hosted link : https://onekey-8pr2.onrender.com/
 
 Default: backend on `http://localhost:8000`, frontend proxies to it.
 
@@ -93,6 +93,6 @@ Default: backend on `http://localhost:8000`, frontend proxies to it.
 
 ---
 
-Built with ❤️ by **[Anik Chand](https://github.com/anikchand461)** and **[Abhiraj Adhikary](https://github.com/abhirajadhikary06)**
+Built with 🩵 by **[Anik Chand](https://github.com/anikchand461)** and **[Abhiraj Adhikary](https://github.com/abhirajadhikary06)**and **[Sreeja Maity](https://github.com/sreejamaity9)**and **[Radhika Kumari](https://github.com/ridsslook)**
 **onekey** — because your keys deserve better than a `.env` file.
 
