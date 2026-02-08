@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" href="../static/images/favicon.ico" />
-    <title>{{TITLE}} - onekey Docs</title>
+    <title>Mistral AI Integration - onekey Docs</title>
     <style>
       * {
         margin: 0;
@@ -21,7 +21,6 @@
         padding-top: 15rem;
       }
 
-      /* Floating Navbar */
       .navbar {
         position: fixed;
         top: 2rem;
@@ -82,7 +81,6 @@
         box-shadow: 0px 0px 0px #666666;
       }
 
-      /* Integration Navigation Bar */
       .integration-nav {
         position: fixed;
         top: 9rem;
@@ -154,13 +152,11 @@
         box-shadow: 0px 0px 0px #666666;
       }
 
-      /* Container */
       .container {
         max-width: 1200px;
         margin: 0 auto;
       }
 
-      /* Main Heading */
       h1 {
         font-size: 3rem;
         font-weight: 700;
@@ -176,7 +172,6 @@
         line-height: 1.6;
       }
 
-      /* Section Cards */
       .section {
         background: #ffffff;
         padding: 2rem;
@@ -193,7 +188,6 @@
         margin-bottom: 1.5rem;
       }
 
-      /* Code Snippet Toggle */
       .code-toggle {
         display: flex;
         gap: 1rem;
@@ -228,13 +222,6 @@
         box-shadow: 0px 0px 0px #666666;
       }
 
-      .toggle-btn img {
-        width: 18px;
-        height: 18px;
-        object-fit: contain;
-      }
-
-      /* Code Block */
       .code-block {
         display: none;
         background: #f3f4f6;
@@ -255,10 +242,6 @@
         font-size: 0.9rem;
         line-height: 1.6;
         color: #111827;
-      }
-
-      code {
-        font-family: "Courier New", monospace;
       }
 
       .copy-btn {
@@ -301,7 +284,6 @@
         font-weight: 700;
       }
 
-      /* List Styles */
       ul {
         list-style: none;
         margin-left: 0;
@@ -329,7 +311,6 @@
         border: 1px solid #e5e7eb;
       }
 
-      /* Responsive */
       @media (max-width: 768px) {
         body {
           padding-top: 17rem;
@@ -358,7 +339,6 @@
     </style>
   </head>
   <body>
-    <!-- Floating Navbar -->
     <nav class="navbar">
       <div class="navbar-logo" onclick="goHome()">
         <img src="../static/images/logo.png" alt="onekey" />
@@ -369,33 +349,207 @@
       </button>
     </nav>
 
-    <!-- Integration Navigation -->
     <div class="integration-nav">
       <div class="integration-tabs">
-        <a href="groq.html" class="integration-tab {{GROQ_ACTIVE}}">Groq</a>
-        <a href="openrouter.html" class="integration-tab {{OPENROUTER_ACTIVE}}"
-          >OpenRouter</a
-        >
-        <a href="gemini.html" class="integration-tab {{GEMINI_ACTIVE}}"
-          >Gemini</a
-        >
-        <a href="openai.html" class="integration-tab {{OPENAI_ACTIVE}}"
-          >OpenAI</a
-        >
-        <a href="anthropic.html" class="integration-tab {{ANTHROPIC_ACTIVE}}"
-          >Claude</a
-        >
-        <a href="mistral.html" class="integration-tab {{MISTRAL_ACTIVE}}"
-          >Mistral</a
-        >
-        <a href="perplexity.html" class="integration-tab {{PERPLEXITY_ACTIVE}}"
-          >Perplexity</a
-        >
+        <a href="groq.html" class="integration-tab">Groq</a>
+        <a href="openrouter.html" class="integration-tab">OpenRouter</a>
+        <a href="gemini.html" class="integration-tab">Gemini</a>
+        <a href="openai.html" class="integration-tab">OpenAI</a>
+        <a href="anthropic.html" class="integration-tab">Claude</a>
+        <a href="mistral.html" class="integration-tab active">Mistral</a>
       </div>
     </div>
 
-    <!-- Main Content -->
-    <div class="container">{{CONTENT}}</div>
+    <div class="container">
+      <h1>Onekey with Mistral AI</h1>
+      <p class="subtitle">
+        Mistral AI delivers state-of-the-art open-source language models with
+        exceptional performance and efficiency. Their models like Mixtral 8x7B
+        and Mistral 7B offer powerful reasoning capabilities while maintaining
+        fast inference speeds. Use Onekey to seamlessly integrate Mistral AI
+        models into your applications with unified API key management.
+      </p>
+
+      <div class="section">
+        <h2>Quick Start</h2>
+
+        <div class="code-toggle">
+          <button class="toggle-btn active" onclick="showCode('python')">
+            Python
+          </button>
+          <button class="toggle-btn" onclick="showCode('curl')">cURL</button>
+        </div>
+
+        <div class="code-block active" id="python-code">
+          <button class="copy-btn" onclick="copyCode('python-code-text', this)">
+            <img src="../static/images/copy.png" alt="Copy" /> Copy
+          </button>
+          <pre id="python-code-text"><code>import requests
+
+msgs = [
+    "What is machine learning?",
+    "Explain Docker in simple terms",
+    "Write a Python function to reverse a string",
+] * 2
+
+for m in msgs:
+    print(requests.post(
+        "https://onekey-8pr2.onrender.com/proxy/u/mistral/&lt;api-key-name&gt;",
+        headers={
+            "Authorization": "Bearer apikey-mistral-&lt;api-key-name&gt;",
+            "Content-Type": "application/json"
+        },
+        json={
+            "model": "mistral/mistral-large-latest",
+            "messages": [{"role": "user", "content": m}]
+        }
+    ).json())</code></pre>
+        </div>
+
+        <div class="code-block" id="curl-code">
+          <button class="copy-btn" onclick="copyCode('curl-code-text', this)">
+            <img src="../static/images/copy.png" alt="Copy" /> Copy
+          </button>
+          <pre
+            id="curl-code-text"
+          ><code>curl -X POST https://onekey-8pr2.onrender.com/proxy/u/mistral/&lt;api-key-name&gt; \
+  -H "Authorization: Bearer apikey-mistral-&lt;api-key-name&gt;" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "mistral/mistral-large-latest",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Explain the concept of neural networks in simple terms"
+      }
+    ]
+  }'</code></pre>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>Parameters</h2>
+        <ul>
+          <li>
+            <strong>&lt;api-key-name&gt;</strong> - Replace with your API key
+            name from the dashboard
+          </li>
+          <li>
+            <strong>model</strong> - Mistral model ID (e.g.,
+            mistral/mistral-large-latest)
+          </li>
+          <li>
+            <strong>messages</strong> - Array of message objects with role and
+            content
+          </li>
+          <li>
+            <strong>temperature</strong> - Sampling temperature (0.0 to 1.0,
+            default: 0.7)
+          </li>
+          <li>
+            <strong>max_tokens</strong> - Maximum tokens to generate (optional)
+          </li>
+          <li>
+            <strong>top_p</strong> - Nucleus sampling parameter (0.0 to 1.0,
+            default: 1.0)
+          </li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h2>Popular Mistral AI Models</h2>
+        <ul>
+          <li>
+            <code>mistral/mistral-large-latest</code> - Latest and most powerful
+            Mistral model
+          </li>
+          <li>
+            <code>mistral/mistral-medium-latest</code> - Balanced performance
+            and cost
+          </li>
+          <li>
+            <code>mistral/mistral-small-latest</code> - Fast and cost-effective
+            for simple tasks
+          </li>
+          <li>
+            <code>mistral/open-mistral-7b</code> - Open-source 7B parameter
+            model
+          </li>
+          <li>
+            <code>mistral/open-mixtral-8x7b</code> - Open-source mixture of
+            experts model
+          </li>
+          <li>
+            <code>mistral/open-mixtral-8x22b</code> - Open-source 8x22B mixture
+            of experts model
+          </li>
+          <li>
+            <code>mistral/codestral-latest</code> - Specialized for code
+            generation and understanding
+          </li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h2>Example: Code Generation</h2>
+        <div class="code-block active">
+          <button class="copy-btn" onclick="copyCode('code-gen-text', this)">
+            <img src="../static/images/copy.png" alt="Copy" /> Copy
+          </button>
+          <pre id="code-gen-text"><code>import requests
+
+response = requests.post(
+    "https://onekey-8pr2.onrender.com/proxy/u/mistral/&lt;api-key-name&gt;",
+    headers={
+        "Authorization": "Bearer apikey-mistral-&lt;api-key-name&gt;",
+        "Content-Type": "application/json"
+    },
+    json={
+        "model": "mistral/codestral-latest",
+        "messages": [
+            {
+                "role": "user",
+                "content": "Write a Python function that implements binary search on a sorted array"
+            }
+        ],
+        "max_tokens": 500
+    }
+)
+
+print(response.json())</code></pre>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>Key Features of Mistral AI Models</h2>
+        <ul>
+          <li>
+            <strong>Open Source</strong> - Many models are open-source and
+            freely available
+          </li>
+          <li>
+            <strong>Mixture of Experts</strong> - Mixtral models use sparse MoE
+            architecture for efficiency
+          </li>
+          <li>
+            <strong>Fast Inference</strong> - Optimized for low-latency,
+            high-throughput applications
+          </li>
+          <li>
+            <strong>Strong Reasoning</strong> - Excellent performance on complex
+            reasoning tasks
+          </li>
+          <li>
+            <strong>Code Specialization</strong> - Codestral model specifically
+            trained for programming tasks
+          </li>
+          <li>
+            <strong>Cost-Effective</strong> - Competitive pricing compared to
+            other leading models
+          </li>
+        </ul>
+      </div>
+    </div>
 
     <script>
       function goBack() {
@@ -406,7 +560,6 @@
         window.location.href = "/static/dashboard.html";
       }
 
-      // Code snippet toggle functionality
       function showCode(type) {
         const codeBlocks = document.querySelectorAll(".code-block");
         const toggleBtns = document.querySelectorAll(".toggle-btn");
@@ -428,7 +581,6 @@
         });
       }
 
-      // Copy code to clipboard
       function copyCode(elementId, buttonEl) {
         const codeElement = document.getElementById(elementId);
         const code = codeElement.textContent;
@@ -444,7 +596,6 @@
         });
       }
 
-      // Show Python code by default
       window.addEventListener("load", () => {
         showCode("python");
       });
