@@ -1,0 +1,508 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="../static/images/favicon.ico" />
+    <title>OpenRouter Integration - onekey Docs</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: #ffffff;
+        color: #111827;
+        padding: 2rem;
+        padding-top: 15rem;
+      }
+
+      /* Floating Navbar */
+      .navbar {
+        position: fixed;
+        top: 2rem;
+        left: 50%;
+        transform: translateX(-50%);
+        width: calc(100% - 4rem);
+        max-width: 1200px;
+        background: #ffffff;
+        border: 4px solid #000000;
+        border-radius: 16px;
+        box-shadow: 6px 6px 0px #000000;
+        padding: 1rem 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        z-index: 1000;
+      }
+
+      .navbar-logo {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        cursor: pointer;
+      }
+
+      .navbar-logo img {
+        width: 48px;
+        height: 48px;
+        object-fit: contain;
+      }
+
+      .navbar-logo span {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #000000;
+      }
+
+      .back-button {
+        padding: 0.75rem 1.5rem;
+        background: #000000;
+        color: #ffffff;
+        border: none;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        box-shadow: 3px 3px 0px #666666;
+      }
+
+      .back-button:hover {
+        transform: translate(2px, 2px);
+        box-shadow: 1px 1px 0px #666666;
+      }
+
+      .back-button:active {
+        transform: translate(3px, 3px);
+        box-shadow: 0px 0px 0px #666666;
+      }
+
+      /* Integration Navigation Bar */
+      .integration-nav {
+        position: fixed;
+        top: 9rem;
+        left: 50%;
+        transform: translateX(-50%);
+        width: calc(100% - 4rem);
+        max-width: 1200px;
+        background: #ffffff;
+        border: 3px solid #000000;
+        border-radius: 12px;
+        box-shadow: 5px 5px 0px #000000;
+        padding: 0.5rem 0.5rem 0.75rem 0.5rem;
+        z-index: 999;
+        overflow-x: auto;
+        overflow-y: hidden;
+        white-space: nowrap;
+        scrollbar-width: thin;
+        scrollbar-color: #000000 #f3f4f6;
+      }
+
+      .integration-nav::-webkit-scrollbar {
+        height: 4px;
+      }
+
+      .integration-nav::-webkit-scrollbar-track {
+        background: transparent;
+        border-radius: 4px;
+        margin: 0 6px;
+      }
+
+      .integration-nav::-webkit-scrollbar-thumb {
+        background: #000000;
+        border-radius: 4px;
+      }
+
+      .integration-nav::-webkit-scrollbar-thumb:hover {
+        background: #374151;
+      }
+
+      .integration-tabs {
+        display: inline-flex;
+        gap: 0.5rem;
+      }
+
+      .integration-tab {
+        padding: 0.45rem 0.9rem;
+        background: #ffffff;
+        color: #000000;
+        border: 2px solid #000000;
+        border-radius: 7px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        box-shadow: 2px 2px 0px #666666;
+        text-decoration: none;
+        display: inline-block;
+      }
+
+      .integration-tab:hover {
+        transform: translate(2px, 2px);
+        box-shadow: 1px 1px 0px #666666;
+      }
+
+      .integration-tab.active {
+        background: #000000;
+        color: #ffffff;
+        transform: translate(3px, 3px);
+        box-shadow: 0px 0px 0px #666666;
+      }
+
+      /* Container */
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+
+      /* Main Heading */
+      h1 {
+        font-size: 3rem;
+        font-weight: 700;
+        color: #000000;
+        margin-bottom: 1rem;
+        letter-spacing: -1px;
+      }
+
+      .subtitle {
+        font-size: 1.1rem;
+        color: #4b5563;
+        margin-bottom: 3rem;
+        line-height: 1.6;
+      }
+
+      /* Section Cards */
+      .section {
+        background: #ffffff;
+        padding: 2rem;
+        border-radius: 16px;
+        border: 4px solid #000000;
+        box-shadow: 8px 8px 0px #000000;
+        margin-bottom: 2rem;
+      }
+
+      h2 {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: #000000;
+        margin-bottom: 1.5rem;
+      }
+
+      /* Code Snippet Toggle */
+      .code-toggle {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .toggle-btn {
+        padding: 0.75rem 1.5rem;
+        background: #ffffff;
+        color: #000000;
+        border: 3px solid #000000;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        box-shadow: 3px 3px 0px #666666;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .toggle-btn img {
+        width: 18px;
+        height: 18px;
+        object-fit: contain;
+      }
+
+      .toggle-btn:hover {
+        transform: translate(2px, 2px);
+        box-shadow: 1px 1px 0px #666666;
+      }
+
+      .toggle-btn.active {
+        background: #000000;
+        color: #ffffff;
+        transform: translate(3px, 3px);
+        box-shadow: 0px 0px 0px #666666;
+      }
+
+      /* Code Block */
+      .code-block {
+        display: none;
+        background: #f3f4f6;
+        border: 3px solid #000000;
+        border-radius: 8px;
+        padding: 1.5rem;
+        overflow-x: auto;
+        position: relative;
+      }
+
+      .code-block.active {
+        display: block;
+      }
+
+      pre {
+        margin: 0;
+        font-family: 'Courier New', monospace;
+        font-size: 0.9rem;
+        line-height: 1.6;
+        color: #111827;
+      }
+
+      code {
+        font-family: 'Courier New', monospace;
+      }
+
+      .copy-btn {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        padding: 0.5rem 1rem;
+        background: #000000;
+        color: #ffffff;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        box-shadow: 2px 2px 0px #666666;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+      }
+
+      .copy-btn img {
+        width: 16px;
+        height: 16px;
+        object-fit: contain;
+      }
+
+      .copy-confirm {
+        color: #16a34a;
+        font-weight: 700;
+      }
+
+      .copy-btn:hover {
+        transform: translate(1px, 1px);
+        box-shadow: 1px 1px 0px #666666;
+      }
+
+      .copy-btn:active {
+        transform: translate(2px, 2px);
+        box-shadow: 0px 0px 0px #666666;
+      }
+
+      /* List Styles */
+      ul {
+        list-style: none;
+        margin-left: 0;
+      }
+
+      li {
+        padding: 0.75rem 0;
+        padding-left: 1.5rem;
+        position: relative;
+        line-height: 1.6;
+      }
+
+      li:before {
+        content: "▪";
+        position: absolute;
+        left: 0;
+        font-weight: 700;
+        color: #000000;
+      }
+
+      code {
+        background: #f3f4f6;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        border: 1px solid #e5e7eb;
+      }
+
+      /* Responsive */
+      @media (max-width: 768px) {
+        body {
+          padding-top: 17rem;
+        }
+
+        h1 {
+          font-size: 2rem;
+        }
+
+        .integration-nav {
+          top: 8rem;
+        }
+
+        .code-toggle {
+          flex-direction: column;
+        }
+
+        .toggle-btn {
+          width: 100%;
+        }
+
+        pre {
+          font-size: 0.8rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Floating Navbar -->
+    <nav class="navbar">
+      <div class="navbar-logo" onclick="goHome()">
+        <img src="../static/images/logo.png" alt="onekey" />
+        <span>onekey</span>
+      </div>
+      <button class="back-button" onclick="goBack()">← Back to Dashboard</button>
+    </nav>
+
+    <!-- Integration Navigation -->
+    <div class="integration-nav">
+      <div class="integration-tabs">
+        <a href="groq.html" class="integration-tab">Groq</a>
+        <a href="openrouter.html" class="integration-tab active">OpenRouter</a>
+        <a href="gemini.html" class="integration-tab">Gemini</a>
+        <a href="openai.html" class="integration-tab">OpenAI</a>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container">
+      <h1>Onekey with OpenRouter</h1>
+      <p class="subtitle">
+        OpenRouter provides unified access to multiple AI models from different providers through a single API.
+        Integrate Onekey to manage your OpenRouter API keys and access models from OpenAI, Anthropic, Google, Meta, and more with centralized monitoring.
+      </p>
+
+      <!-- Code Examples Section -->
+      <div class="section">
+        <h2>Quick Start</h2>
+        
+        <div class="code-toggle">
+          <button class="toggle-btn active" onclick="showCode('python')">Python</button>
+          <button class="toggle-btn" onclick="showCode('curl')">cURL</button>
+        </div>
+
+        <!-- Python Code Block -->
+        <div class="code-block active" id="python-code">
+          <button class="copy-btn" onclick="copyCode('python-code-text', this)"><img src="../static/images/copy.png" alt="Copy" /> Copy</button>
+          <pre id="python-code-text"><code>import requests
+
+msgs = [
+    "What is machine learning?",
+    "Explain Docker in simple terms",
+    "What is the difference between REST and GraphQL?",
+] * 2
+
+for m in msgs:
+    print(requests.post(
+        "https://onekey-8pr2.onrender.com/proxy/u/openrouter/&lt;api-key-name&gt;",
+        headers={
+            "Authorization": "Bearer apikey-openrouter-&lt;api-key-name&gt;",
+            "Content-Type": "application/json"
+        },
+        json={
+            "model": "openai/gpt-4-turbo-preview",
+            "messages": [{"role": "user", "content": m}]
+        }
+    ).json())</code></pre>
+        </div>
+
+        <!-- cURL Code Block -->
+        <div class="code-block" id="curl-code">
+          <button class="copy-btn" onclick="copyCode('curl-code-text', this)"><img src="../static/images/copy.png" alt="Copy" /> Copy</button>
+          <pre id="curl-code-text"><code>curl -X POST https://onekey-8pr2.onrender.com/proxy/u/openrouter/&lt;api-key-name&gt; \
+  -H "Authorization: Bearer apikey-openrouter-&lt;api-key-name&gt;" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-4-turbo-preview",
+    "messages": [
+      {
+        "role": "user",
+        "content": "What is dbt tool?"
+      }
+    ]
+  }'</code></pre>
+        </div>
+      </div>
+
+      <!-- Parameters Section -->
+      <div class="section">
+        <h2>Parameters</h2>
+        <ul>
+          <li><strong>&lt;api-key-name&gt;</strong> - Replace with your API key name from the dashboard</li>
+          <li><strong>model</strong> - OpenRouter model ID (e.g., openai/gpt-4, anthropic/claude-3-opus)</li>
+          <li><strong>messages</strong> - Array of message objects with role and content</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h2>Popular OpenRouter Models</h2>
+        <ul>
+          <li><code>openai/gpt-4-turbo-preview</code> - OpenAI's GPT-4 Turbo model</li>
+          <li><code>anthropic/claude-3-opus</code> - Anthropic's most capable Claude model</li>
+          <li><code>google/gemini-pro</code> - Google's Gemini Pro model</li>
+          <li><code>meta-llama/llama-3-70b-instruct</code> - Meta's Llama 3 70B instruction model</li>
+          <li><code>mistralai/mixtral-8x7b-instruct</code> - Mistral's mixture of experts model</li>
+        </ul>
+      </div>
+    </div>
+
+    <script>
+      function goBack() {
+        window.location.href = "/static/dashboard.html";
+      }
+
+      function goHome() {
+        window.location.href = "/static/dashboard.html";
+      }
+
+      // Code snippet toggle functionality
+      function showCode(type) {
+        const codeBlocks = document.querySelectorAll('.code-block');
+        const toggleBtns = document.querySelectorAll('.toggle-btn');
+        
+        codeBlocks.forEach(block => {
+          if (block.id === type + '-code') {
+            block.classList.add('active');
+          } else {
+            block.classList.remove('active');
+          }
+        });
+
+        toggleBtns.forEach(btn => {
+          if (btn.getAttribute('onclick').includes(type)) {
+            btn.classList.add('active');
+          } else {
+            btn.classList.remove('active');
+          }
+        });
+      }
+
+      // Copy code to clipboard
+      function copyCode(elementId, buttonEl) {
+        const codeElement = document.getElementById(elementId);
+        const code = codeElement.textContent;
+        
+        navigator.clipboard.writeText(code).then(() => {
+          const btn = buttonEl;
+          const originalHTML = btn.innerHTML;
+          btn.innerHTML = '<img src="../static/images/copy.png" alt="Copy" /> <span class="copy-confirm">✓ Copied..</span>';
+          setTimeout(() => {
+            btn.innerHTML = originalHTML;
+          }, 2000);
+        });
+      }
+    </script>
+  </body>
+</html>
