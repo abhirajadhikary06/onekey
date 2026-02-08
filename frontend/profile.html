@@ -1,0 +1,633 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="static/images/favicon.ico" />
+    <title>Profile - Zerokey</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: #ffffff;
+        color: #111827;
+        padding: 2rem;
+        padding-top: 7rem;
+      }
+
+      /* Floating Navbar */
+      .navbar {
+        position: fixed;
+        top: 2rem;
+        left: 50%;
+        transform: translateX(-50%);
+        width: calc(100% - 4rem);
+        max-width: 900px;
+        background: #ffffff;
+        border: 4px solid #000000;
+        border-radius: 16px;
+        box-shadow: 6px 6px 0px #000000;
+        padding: 1rem 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        z-index: 1000;
+      }
+
+      .navbar-logo {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }
+
+      .navbar-logo img {
+        width: 48px;
+        height: 48px;
+        object-fit: contain;
+      }
+
+      .navbar-logo span {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #000000;
+      }
+
+      .hamburger {
+        width: 48px;
+        height: 48px;
+        background: #000000;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        transition: all 0.2s;
+        box-shadow: 3px 3px 0px #666666;
+      }
+
+      .hamburger:hover {
+        transform: translate(2px, 2px);
+        box-shadow: 1px 1px 0px #666666;
+      }
+
+      .hamburger:active {
+        transform: translate(3px, 3px);
+        box-shadow: 0px 0px 0px #666666;
+      }
+
+      .hamburger span {
+        width: 24px;
+        height: 3px;
+        background: #ffffff;
+        border-radius: 2px;
+        transition: all 0.3s;
+      }
+
+      .hamburger.active span:nth-child(1) {
+        transform: rotate(45deg) translate(6px, 6px);
+      }
+
+      .hamburger.active span:nth-child(2) {
+        opacity: 0;
+      }
+
+      .hamburger.active span:nth-child(3) {
+        transform: rotate(-45deg) translate(6px, -6px);
+      }
+
+      .dropdown-menu {
+        position: absolute;
+        top: calc(100% + 1rem);
+        right: 0;
+        background: #ffffff;
+        border: 4px solid #000000;
+        border-radius: 12px;
+        box-shadow: 6px 6px 0px #000000;
+        min-width: 200px;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-10px);
+        transition: all 0.3s;
+      }
+
+      .dropdown-menu.active {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+      }
+
+      .dropdown-item {
+        padding: 1rem 1.25rem;
+        border: none;
+        background: #ffffff;
+        width: 100%;
+        text-align: left;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        color: #000000;
+        border-bottom: 3px solid #000000;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        box-shadow: 3px 3px 0px #000000;
+      }
+
+      .dropdown-item:last-child {
+        border-bottom: none;
+        border-radius: 0 0 8px 8px;
+      }
+
+      .dropdown-item:first-child {
+        border-radius: 8px 8px 0 0;
+      }
+
+      .dropdown-item:hover {
+        background: #f3f4f6;
+        transform: translate(1px, 1px);
+        box-shadow: 2px 2px 0px #000000;
+      }
+
+      .dropdown-item:active {
+        transform: translate(2px, 2px);
+        box-shadow: 0px 0px 0px #000000;
+      }
+
+      .dropdown-item.logout {
+        color: #dc2626;
+      }
+
+      .dropdown-icon {
+        width: 20px;
+        height: 20px;
+        object-fit: contain;
+      }
+
+      .navbar-right {
+        position: relative;
+      }
+
+      /* Container */
+      .container {
+        max-width: 900px;
+        margin: 0 auto;
+      }
+
+      h1 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #000000;
+        margin-bottom: 0.5rem;
+      }
+
+      /* Cards */
+      .card {
+        background: #ffffff;
+        padding: 2rem;
+        border-radius: 16px;
+        border: 4px solid #000000;
+        box-shadow: 8px 8px 0px #000000;
+        margin-bottom: 2rem;
+      }
+
+      .profile-grid {
+        display: grid;
+        grid-template-columns: 140px 1fr;
+        gap: 2rem;
+        align-items: center;
+      }
+
+      .avatar {
+        width: 140px;
+        height: 140px;
+        border-radius: 16px;
+        object-fit: cover;
+        border: 4px solid #000000;
+        background: #f3f4f6;
+        box-shadow: 4px 4px 0px #000000;
+      }
+
+      .meta {
+        display: grid;
+        gap: 1rem;
+      }
+
+      .meta-item {
+        display: grid;
+        gap: 0.25rem;
+      }
+
+      .label {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .value {
+        font-weight: 600;
+        color: #000000;
+        font-size: 1.1rem;
+      }
+
+      h2 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #000000;
+        margin-bottom: 1.5rem;
+      }
+
+      .card p {
+        color: #374151;
+        margin-bottom: 1.5rem;
+        line-height: 1.6;
+      }
+
+      /* Form Elements */
+      form {
+        display: grid;
+        gap: 1rem;
+      }
+
+      input {
+        width: 100%;
+        padding: 0.9rem 1rem;
+        border: 3px solid #000000;
+        border-radius: 8px;
+        font-size: 1rem;
+        background: #ffffff;
+        transition: all 0.2s;
+      }
+
+      input:focus {
+        outline: none;
+        transform: translateY(-2px);
+        box-shadow: 4px 4px 0px #000000;
+      }
+
+      input::placeholder {
+        color: #9ca3af;
+      }
+
+      /* Buttons */
+      .btn {
+        padding: 0.9rem 1.5rem;
+        border: none;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: inline-block;
+      }
+
+      .btn-primary {
+        background: #000000;
+        color: #ffffff;
+        border: 3px solid #000000;
+        box-shadow: 4px 4px 0px #666666;
+      }
+
+      .btn-primary:hover {
+        transform: translate(2px, 2px);
+        box-shadow: 2px 2px 0px #666666;
+      }
+
+      .btn-primary:active {
+        transform: translate(4px, 4px);
+        box-shadow: 0px 0px 0px #666666;
+      }
+
+      .btn-danger {
+        background: #dc2626;
+        color: #ffffff;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        box-shadow: 3px 3px 0px #991b1b;
+      }
+
+      .btn-danger:hover {
+        transform: translate(2px, 2px);
+        box-shadow: 2px 2px 0px #991b1b;
+      }
+
+      .btn-danger:active {
+        transform: translate(3px, 3px);
+        box-shadow: 0px 0px 0px #991b1b;
+      }
+
+      .delete-icon {
+        color: #dc2626;
+        margin-right: 0.5rem;
+        font-size: 1.05rem;
+        vertical-align: middle;
+      }
+
+      /* Status Messages */
+      .status {
+        min-height: 1.5rem;
+        font-size: 0.95rem;
+        font-weight: 600;
+        margin-top: 1rem;
+      }
+
+      .success {
+        color: #16a34a;
+      }
+
+      .error {
+        color: #dc2626;
+      }
+
+      @media (max-width: 900px) {
+        .navbar {
+          width: calc(100% - 2rem);
+          top: 1rem;
+        }
+
+        body {
+          padding-top: 6rem;
+        }
+
+        .profile-grid {
+          grid-template-columns: 1fr;
+          text-align: center;
+          gap: 1.5rem;
+        }
+
+        .avatar {
+          margin: 0 auto;
+        }
+
+        h1 {
+          font-size: 2rem;
+        }
+      }
+
+      @media (max-width: 600px) {
+        .navbar-logo span {
+          display: none;
+        }
+
+        .card {
+          padding: 1.5rem;
+        }
+
+        .avatar {
+          width: 120px;
+          height: 120px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Floating Navbar -->
+    <nav class="navbar">
+      <div class="navbar-logo">
+        <img src="static/images/logo.png" alt="Zerokey Logo" />
+        <span>zerokey</span>
+      </div>
+      <div class="navbar-right">
+        <button class="hamburger" id="hamburger" onclick="toggleMenu()">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+        <div class="dropdown-menu" id="dropdownMenu">
+          <button class="dropdown-item" onclick="goDashboard()">
+            <img class="dropdown-icon" src="static/images/dashboard.png" alt="Dashboard" />
+            Dashboard
+          </button>
+          <button class="dropdown-item" onclick="goCLI()">
+            <img class="dropdown-icon" src="static/images/pypylogo.png" alt="PIP Package" />
+            PIP Package
+          </button>
+          <button class="dropdown-item logout" onclick="logout()">
+            <img class="dropdown-icon" src="static/images/logout.png" alt="Logout" />
+            Logout
+          </button>
+        </div>
+      </div>
+    </nav>
+
+    <div class="container">
+      <div style="margin-bottom: 4rem;"></div>
+
+      <!-- Profile Info Card -->
+      <div class="card profile-grid">
+        <img id="avatar" class="avatar" alt="Profile avatar" />
+        <div class="meta">
+          <div class="meta-item">
+            <div class="label">Username</div>
+            <div class="value" id="username">Loading...</div>
+          </div>
+          <div class="meta-item">
+            <div class="label">Email</div>
+            <div class="value" id="email">-</div>
+          </div>
+          <div class="meta-item">
+            <div class="label">Auth Method</div>
+            <div class="value" id="authMethod">-</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Update Password Card -->
+      <div class="card" id="passwordCard">
+        <h2>Update Password</h2>
+        <form onsubmit="event.preventDefault(); updatePassword();">
+          <input type="password" id="oldPassword" placeholder="Old password" required />
+          <input type="password" id="newPassword" placeholder="New password" required />
+          <button class="btn btn-primary" type="submit">Update Password</button>
+          <div id="passwordStatus" class="status"></div>
+        </form>
+      </div>
+
+      <!-- Delete Account Card -->
+      <div class="card">
+        <h2>Delete Account</h2>
+        <p>This will permanently delete your account and all stored keys and usage logs. This action cannot be undone.</p>
+        <button class="btn btn-danger" onclick="deleteAccount()">
+          Delete Account
+        </button>
+        <div id="deleteStatus" class="status"></div>
+      </div>
+    </div>
+
+    <script>
+      // Toggle Dropdown Menu
+      function toggleMenu() {
+        const hamburger = document.getElementById('hamburger');
+        const dropdown = document.getElementById('dropdownMenu');
+        hamburger.classList.toggle('active');
+        dropdown.classList.toggle('active');
+      }
+
+      // Close dropdown when clicking outside
+      document.addEventListener('click', function(event) {
+        const navbar = document.querySelector('.navbar-right');
+        if (!navbar.contains(event.target)) {
+          document.getElementById('hamburger').classList.remove('active');
+          document.getElementById('dropdownMenu').classList.remove('active');
+        }
+      });
+
+      const token = localStorage.getItem("access_token");
+      if (!token) {
+        window.location.href = "/static/index.html";
+      }
+
+      const authHeaders = {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      };
+
+      function goDashboard() {
+        window.location.href = "/static/dashboard.html";
+      }
+
+      function goCLI() {
+        window.location.href = "/static/pip-package.html";
+      }
+
+      function logout() {
+        localStorage.removeItem("access_token");
+        window.location.href = "/static/index.html";
+      }
+
+      function pickAvatar(data) {
+        // Prefer OAuth-provided avatar URL
+        if (data.avatar_url) return data.avatar_url;
+
+        // Use external image links as the random pool
+        const externalImages = [
+          'https://i.ibb.co/q3F765qq/image.png',
+          'https://i.ibb.co/1f6dst94/image1.png',
+          'https://i.ibb.co/tpGX20JB/image2.png',
+          'https://i.ibb.co/KpqMTjyQ/image3.png',
+          'https://i.ibb.co/wFHP1Vwd/image4.png',
+        ];
+        const idxExternal = Math.floor(Math.random() * externalImages.length);
+        const chosenExternal = externalImages[idxExternal];
+        if (chosenExternal) return chosenExternal;
+
+        // Optional fallback: use any explicit profile_image_* fields
+        const profileImages = [];
+        let i = 0;
+        while (data[`profile_image_${i}`]) {
+          profileImages.push(data[`profile_image_${i}`]);
+          i++;
+        }
+        if (profileImages.length > 0) {
+          const idx = Math.floor(Math.random() * profileImages.length);
+          return profileImages[idx];
+        }
+
+        // Final fallback: use local_avatars list from backend
+        const candidates = Array.isArray(data.local_avatars) ? data.local_avatars : [];
+        if (candidates.length) {
+          const idx = Math.floor(Math.random() * candidates.length);
+          return candidates[idx];
+        }
+
+        // If nothing else available, default to the first external image
+        return externalImages[0];
+      }
+
+      async function loadProfile() {
+        try {
+          const res = await fetch("/auth/me", { headers: authHeaders });
+          if (!res.ok) throw new Error(await res.text());
+          const data = await res.json();
+
+          document.getElementById("username").textContent = data.username || "User";
+          document.getElementById("email").textContent = data.email || "Not provided";
+          document.getElementById("authMethod").textContent =
+            data.auth_method === "jwt"
+              ? "Email/Password"
+              : data.auth_method === "github"
+              ? "GitHub"
+              : data.auth_method === "gitlab"
+              ? "GitLab"
+              : data.auth_method || "Unknown";
+
+          document.getElementById("avatar").src = pickAvatar(data);
+
+          if (data.auth_method !== "jwt") {
+            document.getElementById("passwordCard").style.display = "none";
+          }
+        } catch (err) {
+          alert("Failed to load profile: " + err.message);
+          logout();
+        }
+      }
+
+      async function updatePassword() {
+        const oldPassword = document.getElementById("oldPassword").value;
+        const newPassword = document.getElementById("newPassword").value;
+        const statusEl = document.getElementById("passwordStatus");
+
+        statusEl.className = "status";
+        statusEl.textContent = "Updating password...";
+
+        try {
+          const res = await fetch("/auth/password", {
+            method: "POST",
+            headers: authHeaders,
+            body: JSON.stringify({ old_password: oldPassword, new_password: newPassword }),
+          });
+
+          const msg = await res.text();
+          if (!res.ok) throw new Error(msg);
+
+          statusEl.className = "status success";
+          statusEl.textContent = "✓ Password updated successfully!";
+          document.getElementById("oldPassword").value = "";
+          document.getElementById("newPassword").value = "";
+        } catch (err) {
+          statusEl.className = "status error";
+          statusEl.textContent = "Error: " + (err.message || "Failed to update password");
+        }
+      }
+
+      async function deleteAccount() {
+        const statusEl = document.getElementById("deleteStatus");
+        if (!confirm("This will delete your account and all data. Continue?")) return;
+
+        statusEl.className = "status";
+        statusEl.textContent = "Deleting account...";
+
+        try {
+          const res = await fetch("/auth/account", {
+            method: "DELETE",
+            headers: authHeaders,
+          });
+          const msg = await res.text();
+          if (!res.ok) throw new Error(msg);
+
+          statusEl.className = "status success";
+          statusEl.textContent = "✓ Account deleted. Redirecting...";
+          localStorage.removeItem("access_token");
+          setTimeout(() => {
+            window.location.href = "/static/index.html";
+          }, 900);
+        } catch (err) {
+          statusEl.className = "status error";
+          statusEl.textContent = "Error: " + (err.message || "Failed to delete account");
+        }
+      }
+
+      loadProfile();
+    </script>
+  </body>
+</html>

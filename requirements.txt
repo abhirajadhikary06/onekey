@@ -1,0 +1,13 @@
+fastapi>=0.115.0
+uvicorn>=0.30.0
+sqlalchemy>=2.0.0
+psycopg2-binary>=2.9.9
+python-dotenv>=1.0.0
+cryptography>=43.0.0
+pyjwt>=2.8.0
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+requests>=2.32.0
+argon2-cffi
+python_multipart
+psycopg2
