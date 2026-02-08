@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "onekey-cli"
-version = "0.1.0"
+version = "0.1.1"
 description = "Secure & unified API key management for developers"
 readme = "README.md"
 license = { text = "MIT" }

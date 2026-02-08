@@ -23,7 +23,7 @@ app = typer.Typer(
     no_args_is_help=True,
 )
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 # Config
 BASE_URL = "https://onekey-8pr2.onrender.com"  # production URL later
@@ -512,6 +512,53 @@ def call(
             except:
                 console.print(e.response.text)
 
+@app.command()
+def docs(
+    provider: str = typer.Argument(
+        None,
+        help="Provider name (groq, openrouter, gemini, openai). Omit to list all."
+    )
+):
+    """Show documentation URLs with clean two-column layout"""
+    DOCS = {
+        "groq": "https://onekey-8pr2.onrender.com/static/docs/groq.html",
+        "openrouter": "https://onekey-8pr2.onrender.com/static/docs/openrouter.html",
+        "gemini": "https://onekey-8pr2.onrender.com/static/docs/gemini.html",
+        "openai": "https://onekey-8pr2.onrender.com/static/docs/openai.html"
+    }
+    
+    # Format provider names for display
+    DISPLAY_NAMES = {
+        "groq": "Groq",
+        "openrouter": "OpenRouter",
+        "gemini": "Gemini",
+        "openai": "OpenAI"
+    }
+    
+    # Create multi-provider output
+    table = Table(
+        show_header=False,
+        box=None,
+        padding=0,
+        collapse_padding=True
+    )
+    table.add_column(justify="left", width=12)
+    table.add_column(justify="left")
+    
+    for name, url in DOCS.items():
+        provider_text = Text(DISPLAY_NAMES[name])
+        
+        table.add_row(provider_text, url, end_section=True)
+    
+    console.print(Panel(
+        table,
+        title="[bold #FFA500]Documentation Links[/bold #FFA500]",
+        border_style="#FFA500",
+        padding=(1, 2),
+        expand=False,
+        box=ROUNDED
+    ))
+    console.print("\nUsage: onekey docs <provider>")
 
 if __name__ == "__main__":
     app()
