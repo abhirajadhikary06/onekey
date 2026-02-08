@@ -93,6 +93,5 @@ Default: backend on `http://localhost:8000`, frontend proxies to it.
 
 ---
 
-Built with 🩵 by **[Anik Chand](https://github.com/anikchand461)** and **[Abhiraj Adhikary](https://github.com/abhirajadhikary06)**and **[Sreeja Maity](https://github.com/sreejamaity9)**and **[Radhika Kumari](https://github.com/ridsslook)**
+Built with 🩵 by **[Anik Chand](https://github.com/anikchand461)** and **[Abhiraj Adhikary](https://github.com/abhirajadhikary06) **and **[Sreeja Maity](https://github.com/sreejamaity9)** and **[Radhika Kumari](https://github.com/ridsslook)**
 **onekey** — because your keys deserve better than a `.env` file.
-
