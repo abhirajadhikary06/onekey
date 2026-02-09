@@ -122,7 +122,7 @@ onekey call <unified_key>   # Test call using unified key
 onekey usage               # Usage overview with sparklines
 ```
 
-- used … typer to create the CLI framework - the command structure
+- typer - to create the CLI framework - the command structure
 - rich - for beautiful terminal UI 
 - request - for communicate with backend
 
