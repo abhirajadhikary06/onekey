@@ -122,6 +122,10 @@ onekey call <unified_key>   # Test call using unified key
 onekey usage               # Usage overview with sparklines
 ```
 
+- typer - to create the CLI framework - the command structure
+- rich - for beautiful terminal UI 
+- request - for communicate with backend
+
 ### 2. Full stack (fastAPI backend + interactive Vanilla JS frontend)
 
 - hosted link : https://onekey-8pr2.onrender.com/
