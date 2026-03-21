@@ -445,6 +445,24 @@
         xata: "xata.png",
       };
 
+      // Set your Cloudinary cloud name to enable compressed delivery.
+      // Keep this empty to serve local files directly.
+      const CLOUDINARY_CLOUD_NAME = "dcts63fqe";
+
+      function localLogoUrl(fileName) {
+        return `static/images/logos/${fileName}`;
+      }
+
+      function cloudinaryCompressedLogoUrl(fileName) {
+        if (!CLOUDINARY_CLOUD_NAME) {
+          return localLogoUrl(fileName);
+        }
+
+        const sourceUrl = `${window.location.origin}/${localLogoUrl(fileName)}`;
+        const encodedSourceUrl = encodeURIComponent(sourceUrl);
+        return `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/image/fetch/f_auto,q_auto,w_120,h_120,c_fit/${encodedSourceUrl}`;
+      }
+
       function toLabel(name) {
         if (displayNames[name]) return displayNames[name];
         return name.charAt(0).toUpperCase() + name.slice(1);
@@ -455,14 +473,22 @@
         card.className = "provider-card";
 
         const img = document.createElement("img");
+        const fileName = logoFileMap[name] || `${name}.png`;
         img.alt = name;
-        img.src = `static/images/logos/${logoFileMap[name] || `${name}.png`}`;
+        img.loading = "lazy";
+        img.decoding = "async";
+        img.src = cloudinaryCompressedLogoUrl(fileName);
 
         const fallback = document.createElement("div");
         fallback.className = "logo-fallback";
         fallback.textContent = name.slice(0, 2);
 
         img.onerror = function () {
+          // If Cloudinary fetch fails, retry from local static file before fallback UI.
+          if (this.src !== new URL(localLogoUrl(fileName), window.location.origin).href) {
+            this.src = localLogoUrl(fileName);
+            return;
+          }
           this.style.display = "none";
           fallback.style.display = "flex";
         };
