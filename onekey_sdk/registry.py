@@ -21,7 +21,7 @@ class IntegrationRegistry:
                         "replicate", "baseten", "huggingface",
                     ],
                     "database": ["neondb", "xata", "supabase", "mongodb", "planetscale", "cockroachdb"],
-                    "vector_db": ["pinecone", "weaviate", "qdrant", "milvus", "chroma", "lancedb"],
+                    "vector_db": ["pinecone", "weaviate", "qdrant", "milvus", "lancedb"],
                     "data_engineering": ["airbyte", "dbt", "fivetran", "dagster", "prefect", "astronomer", "meltano"],
                     "devops": ["github", "gitlab", "bitbucket", "vercel", "render", "cloudflare", "railway"],
                     "apis": ["stripe", "twilio", "sendgrid", "slack", "notion", "shopify", "discord"],
