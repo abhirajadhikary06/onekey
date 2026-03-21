@@ -5,8 +5,46 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from . import database, dependencies, models, security
+from .platform_key import validate_platform_key
 
 router = APIRouter(prefix="/proxy", tags=["proxy"])
+
+
+PROVIDER_CATEGORY_MAP = {
+    "openai": "llm",
+    "groq": "llm",
+    "anthropic": "llm",
+    "gemini": "llm",
+    "openrouter": "llm",
+    "mistral": "llm",
+    "together": "llm",
+    "fireworks": "llm",
+    "anyscale": "llm",
+    "deepinfra": "llm",
+    "nebius": "llm",
+    "cohere": "llm",
+    "ai21": "llm",
+    "perplexity": "llm",
+    "deepseek": "llm",
+    "qwen": "llm",
+    "zhipu": "llm",
+    "01ai": "llm",
+    "grok": "llm",
+    "aleph_alpha": "llm",
+    "replicate": "llm",
+    "baseten": "llm",
+    "huggingface": "llm",
+}
+
+
+def _normalize_category(category: str) -> str:
+    return category.strip().lower().replace(" ", "").replace("-", "")
+
+
+def _provider_in_category(provider: str, category: str) -> bool:
+    normalized = _normalize_category(category)
+    expected = PROVIDER_CATEGORY_MAP.get(provider, "")
+    return normalized in {expected, expected.replace("_", "")}
 
 
 def _ensure_not_expired(key: models.ApiKey) -> None:
@@ -407,8 +445,48 @@ async def proxy_unified(
     if not provided_key:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Missing API key")
 
-    stored_unified = security.decrypt_api_key(key_record.unified_key_encrypted)
-    if stored_unified != provided_key:
+    owner = db.query(models.User).filter(models.User.id == key_record.user_id).first()
+    if not owner:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "User for API key not found")
+
+    is_valid_platform = validate_platform_key(owner, provided_key)
+    is_valid_legacy = security.decrypt_api_key(key_record.unified_key_encrypted) == provided_key
+    if not (is_valid_platform or is_valid_legacy):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid API key")
+
+    return await _proxy_request(provider, key_record, request, db)
+
+
+@router.post("/sdk/{category}/{provider}/{name_slug}")
+async def proxy_unified_category(
+    category: str,
+    provider: str,
+    name_slug: str,
+    request: Request,
+    db: Session = Depends(database.get_db),
+    x_api_key: str | None = Header(default=None, convert_underscores=False),
+    authorization: str | None = Header(default=None),
+):
+    provider = provider.lower()
+    key_record = _find_key_by_name(db, provider, name_slug, user_id=None)
+    if not key_record:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Unified key not found")
+
+    if not _provider_in_category(provider, category):
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            f"Provider '{provider}' does not belong to category '{category}'",
+        )
+
+    provided_key = x_api_key
+    if not provided_key and authorization and authorization.lower().startswith("bearer "):
+        provided_key = authorization.split(" ", 1)[1]
+
+    if not provided_key:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Missing API key")
+
+    owner = db.query(models.User).filter(models.User.id == key_record.user_id).first()
+    if not owner or not validate_platform_key(owner, provided_key):
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid platform API key")
 
     return await _proxy_request(provider, key_record, request, db)

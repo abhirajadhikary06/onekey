@@ -18,6 +18,7 @@ class User(Base):
     bitbucket_username = Column(String, nullable=True)  # Bitbucket username
     auth_method = Column(String, default="jwt")  # "jwt", "github", "gitlab", or "bitbucket"
     is_subscribed = Column(Boolean, default=False)  # Premium subscription status
+    platform_unified_key_encrypted = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     api_keys = relationship("ApiKey", back_populates="user")

@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from . import database, dependencies, models, schemas, security, provider_detection
+from .platform_key import get_or_create_platform_key
 
 router = APIRouter(prefix="/keys", tags=["vault"])
 
@@ -39,6 +40,8 @@ def add_key(
     db: Session = Depends(database.get_db),
     current_user: models.User = Depends(dependencies.get_current_user),
 ):
+    platform_api_key = get_or_create_platform_key(current_user, db)
+
     # Check rate limit for non-subscribed users
     if not current_user.is_subscribed:
         key_count = (
@@ -73,7 +76,7 @@ def add_key(
     if existing:
         raise HTTPException(status_code=400, detail="Key name already exists for this provider")
 
-    unified_api_key_plain = f"apikey-{provider_slug}-{name_slug}"
+    legacy_unified_api_key_plain = f"apikey-{provider_slug}-{name_slug}"
     expires_at = key_in.expires_at
     if expires_at is not None and expires_at.tzinfo is None:
         expires_at = expires_at.replace(tzinfo=timezone.utc)
@@ -84,7 +87,7 @@ def add_key(
         name=key_in.name.strip(),
         name_slug=name_slug,
         encrypted_key=security.encrypt_api_key(key_in.key),
-        unified_key_encrypted=security.encrypt_api_key(unified_api_key_plain),
+        unified_key_encrypted=security.encrypt_api_key(legacy_unified_api_key_plain),
         unified_endpoint=f"/proxy/u/{provider_slug}/{name_slug}",
         expires_at=expires_at,
     )
@@ -102,7 +105,8 @@ def add_key(
         created_at=db_key.created_at,
         expires_at=db_key.expires_at,
         api_key=_mask_api_key(decrypted_key),
-        unified_api_key=unified_api_key_plain,
+        unified_api_key=platform_api_key,
+        platform_api_key=platform_api_key,
         unified_endpoint=db_key.unified_endpoint,
     )
 
@@ -112,6 +116,8 @@ def list_keys(
     db: Session = Depends(database.get_db),
     current_user: models.User = Depends(dependencies.get_current_user),
 ):
+    platform_api_key = get_or_create_platform_key(current_user, db)
+
     keys = (
         db.query(models.ApiKey)
         .filter(models.ApiKey.user_id == current_user.id)
@@ -127,7 +133,8 @@ def list_keys(
             created_at=k.created_at,
             expires_at=k.expires_at,
             api_key=_mask_api_key(security.decrypt_api_key(k.encrypted_key)),
-            unified_api_key=security.decrypt_api_key(k.unified_key_encrypted),
+            unified_api_key=platform_api_key,
+            platform_api_key=platform_api_key,
             unified_endpoint=k.unified_endpoint,
         )
         for k in keys
@@ -152,6 +159,17 @@ def get_key_status(
         "key_count": key_count,
         "max_keys": max_keys if max_keys != float('inf') else None,
         "can_add_more": key_count < max_keys,
+    }
+
+
+@router.get("/platform-key", response_model=dict)
+def get_platform_key(
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(dependencies.get_current_user),
+):
+    return {
+        "platform_api_key": get_or_create_platform_key(current_user, db),
+        "usage_note": "Use this same key across all category SDK calls.",
     }
 
 

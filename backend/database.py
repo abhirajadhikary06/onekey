@@ -39,6 +39,8 @@ def run_simple_migrations():
                 statements.append("ALTER TABLE users ADD COLUMN bitbucket_username VARCHAR")
             if "is_subscribed" not in cols:
                 statements.append("ALTER TABLE users ADD COLUMN is_subscribed BOOLEAN DEFAULT FALSE")
+            if "platform_unified_key_encrypted" not in cols:
+                statements.append("ALTER TABLE users ADD COLUMN platform_unified_key_encrypted VARCHAR")
 
             if statements:
                 with engine.begin() as conn:

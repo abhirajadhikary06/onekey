@@ -27,7 +27,8 @@ Juggling **10–50+ API keys** across providers is painful:
 
 - **AES-256 client-side encryption** — keys never touch the server in plaintext
 - **Deployment** - Render
-- **Unified proxy** — call any provider with the same format (`/proxy/u/<provider>/<slug>`)
+- **Single platform key** — one unified key per user across all providers
+- **Category proxy route** — call providers by category (`/proxy/sdk/<category>/<provider>/<slug>`)
 - **CLI power tool** (`Onekey`): add, list, delete, call, usage — with **Rich** beautiful tables, sparklines & panels
 - **Automatic provider detection** (e.g. `sk-` → OpenAI)
 - **Built-in usage tracking** — tokens used, latency, status codes, errors — per key/provider
@@ -41,7 +42,7 @@ Juggling **10–50+ API keys** across providers is painful:
 Onekey/
 ├── backend/          # FastAPI server (auth, vault, proxy, usage)
 ├── frontend/         # frontend on valinna js , HTML and css
-├── Onekey_cli/      # Typer + Rich CLI (published as Onekey-cli on PyPI)
+├── onekey_sdk/       # Category-based Python SDK package
 ├── Dockerfile        # Easy containerization
 └── ... (pyproject.toml, requirements.txt, etc.)
 ```
@@ -65,7 +66,31 @@ Onekey call <unified_key>   # Test call using unified key
 Onekey usage               # Usage overview with sparklines
 ```
 
-### 2. Full stack (fastAPI backend + interactive Vanilla JS frontend)
+### 2. Python SDK (category-based)
+
+```python
+from onekey_sdk import OnekeyClient
+from onekey_sdk.llm import LLMClient
+
+base_url = "https://onekey-ciwz.onrender.com"
+platform_key = "okp-<your-platform-key>"
+
+client = OnekeyClient(base_url=base_url, platform_api_key=platform_key)
+llm = LLMClient(client)
+
+result = llm.chat(
+	provider="groq",
+	key_slug="my-groq-key",
+	model="llama-3.3-70b-versatile",
+	messages=[{"role": "user", "content": "Hello from Onekey SDK"}],
+)
+
+print(result)
+```
+
+Get your platform key after login from `GET /keys/platform-key`.
+
+### 3. Full stack (fastAPI backend + interactive Vanilla JS frontend)
 
 - hosted link : https://Onekey.onrender.com/
 

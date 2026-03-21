@@ -11,6 +11,7 @@ class ApiKeyOut(BaseModel):
     expires_at: Optional[datetime]
     api_key: str
     unified_api_key: str
+    platform_api_key: Optional[str] = None
     unified_endpoint: str
 
     class Config:
