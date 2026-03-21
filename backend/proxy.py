@@ -28,10 +28,7 @@ PROVIDER_CATEGORY_MAP = {
     "perplexity": "llm",
     "deepseek": "llm",
     "qwen": "llm",
-    "zhipu": "llm",
-    "01ai": "llm",
     "grok": "llm",
-    "aleph_alpha": "llm",
     "replicate": "llm",
     "baseten": "llm",
     "huggingface": "llm",
@@ -40,7 +37,6 @@ PROVIDER_CATEGORY_MAP = {
     "qdrant": "vector_db",
     "milvus": "vector_db",
     "neondb": "database",
-    "redis": "database",
     "xata": "database",
     "airbyte": "data_engineering",
     "dbt": "data_engineering",
@@ -52,10 +48,9 @@ PROVIDER_CATEGORY_MAP = {
     "mongodb": "database",
     "planetscale": "database",
     "chroma": "vector_db",
-    "pgvector": "vector_db",
     "dagster": "data_engineering",
     "prefect": "data_engineering",
-    "airflow": "data_engineering",
+    "astronomer": "data_engineering",
     "vercel": "devops",
     "render": "devops",
     "cloudflare": "devops",
@@ -74,7 +69,6 @@ PROVIDER_CATEGORY_MAP = {
 
 PROVIDER_ALIASES = {
     "claude": "anthropic",
-    "yi": "01ai",
 }
 
 
@@ -137,12 +131,10 @@ CATEGORY_PROVIDER_CONFIG = {
         "qdrant": {"base_url": "https://api.cloud.qdrant.io", "auth_header": "api-key"},
         "milvus": {"base_url": None, "auth_header": "Authorization", "bearer": True},
         "chroma": {"base_url": "https://api.trychroma.com", "auth_header": "Authorization", "bearer": True},
-        "pgvector": {"base_url": None, "auth_header": "Authorization", "bearer": True},
         "lancedb": {"base_url": None, "auth_header": "Authorization", "bearer": True},
     },
     "database": {
         "neondb": {"base_url": None, "auth_header": "Authorization", "bearer": True},
-        "redis": {"base_url": None, "auth_header": "Authorization", "bearer": True},
         "xata": {"base_url": "https://api.xata.io", "auth_header": "Authorization", "bearer": True},
         "supabase": {"base_url": "https://api.supabase.com/v1", "auth_header": "apikey"},
         "mongodb": {"base_url": None, "auth_header": "api-key"},
@@ -155,7 +147,7 @@ CATEGORY_PROVIDER_CONFIG = {
         "fivetran": {"base_url": "https://api.fivetran.com/v1", "auth_header": "Authorization", "bearer": True},
         "dagster": {"base_url": None, "auth_header": "Authorization", "bearer": True},
         "prefect": {"base_url": "https://api.prefect.cloud/api", "auth_header": "Authorization", "bearer": True},
-        "airflow": {"base_url": None, "auth_header": "Authorization", "bearer": True},
+        "astronomer": {"base_url": None, "auth_header": "Authorization", "bearer": True},
         "meltano": {"base_url": None, "auth_header": "Authorization", "bearer": True},
     },
     "devops": {
@@ -375,48 +367,8 @@ def _run_qwen(api_key: str, body: dict):
     return requests.post(url, headers=headers, json=body)
 
 
-def _run_zhipu(api_key: str, body: dict):
-    # For Zhipu (GLM), authentication uses JWT generated from API key (id.secret format)
-    try:
-        import jwt  # Requires PyJWT library
-        id, secret = api_key.split('.')
-        payload = {
-            "api_key": id,
-            "exp": int(time.time()) + 3600,
-            "timestamp": int(time.time())
-        }
-        token = jwt.encode(payload, secret, algorithm="HS256")
-    except Exception as e:
-        raise HTTPException(400, f"Failed to generate JWT for Zhipu: {str(e)}")
-    
-    url = "https://open.bigmodel.cn/api/paas/v4/chat/completions"
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "Content-Type": "application/json",
-    }
-    return requests.post(url, headers=headers, json=body)
-
-
-def _run_yi(api_key: str, body: dict):
-    url = "https://api.lingyiwanwu.com/v1/chat/completions"  # Note: 01.AI is also known as Lingyi Wanwu
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json",
-    }
-    return requests.post(url, headers=headers, json=body)
-
-
 def _run_grok(api_key: str, body: dict):
     url = "https://api.x.ai/v1/chat/completions"
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json",
-    }
-    return requests.post(url, headers=headers, json=body)
-
-
-def _run_aleph_alpha(api_key: str, body: dict):
-    url = "https://api.aleph-alpha.com/complete"
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
@@ -517,14 +469,8 @@ async def _proxy_request(provider: str, key_record: models.ApiKey, request: Requ
             resp = _run_deepseek(api_key, body)
         elif provider == "qwen":
             resp = _run_qwen(api_key, body)
-        elif provider == "zhipu":
-            resp = _run_zhipu(api_key, body)
-        elif provider == "01ai":
-            resp = _run_yi(api_key, body)
         elif provider == "grok":
             resp = _run_grok(api_key, body)
-        elif provider == "aleph_alpha":
-            resp = _run_aleph_alpha(api_key, body)
         elif provider == "replicate":
             resp = _run_replicate(api_key, body)
         elif provider == "baseten":

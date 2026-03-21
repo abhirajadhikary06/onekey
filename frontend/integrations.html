@@ -349,17 +349,17 @@
         llm: [
           "openai", "anthropic", "claude", "groq", "gemini", "openrouter", "mistral",
           "together", "fireworks", "anyscale", "deepinfra", "nebius", "cohere",
-          "ai21", "perplexity", "deepseek", "qwen", "zhipu", "01ai", "grok",
-          "aleph_alpha", "replicate", "baseten", "huggingface"
+          "ai21", "perplexity", "deepseek", "qwen", "grok",
+          "replicate", "baseten", "huggingface"
         ],
         database: [
-          "neondb", "redis", "xata", "supabase", "mongodb", "planetscale", "cockroachdb"
+          "neondb", "xata", "supabase", "mongodb", "planetscale", "cockroachdb"
         ],
         vector_db: [
-          "pinecone", "weaviate", "qdrant", "milvus", "chroma", "pgvector", "lancedb"
+          "pinecone", "weaviate", "qdrant", "milvus", "chroma", "lancedb"
         ],
         data_engineering: [
-          "airbyte", "dbt", "fivetran", "dagster", "prefect", "airflow", "meltano"
+          "airbyte", "dbt", "fivetran", "dagster", "prefect", "astronomer", "meltano"
         ],
         devops: [
           "github", "gitlab", "bitbucket", "vercel", "render", "cloudflare", "railway"
@@ -370,14 +370,11 @@
       };
 
       const displayNames = {
-        "01ai":        "01.AI",
-        "aleph_alpha": "Aleph Alpha",
         "huggingface": "HuggingFace",
         "openrouter":  "OpenRouter",
         "deepinfra":   "DeepInfra",
         "deepseek":    "DeepSeek",
         "neondb":      "NeonDB",
-        "pgvector":    "pgvector",
         "lancedb":     "LanceDB",
         "planetscale": "PlanetScale",
         "cockroachdb": "CockroachDB",
@@ -387,12 +384,65 @@
         "anyscale":    "Anyscale",
         "nebius":      "Nebius",
         "ai21":        "AI21",
-        "zhipu":       "Zhipu AI",
+        "astronomer":  "Astronomer",
         "baseten":     "Baseten",
         "replicate":   "Replicate",
         "meltano":     "Meltano",
         "railway":     "Railway",
         "cloudflare":  "Cloudflare",
+      };
+
+      const logoFileMap = {
+        anyscale: "anyscale.png",
+        ai21: "ai21.png",
+        airbyte: "airbyte.png",
+        anthropic: "anthropic.png",
+        baseten: "baseten.png",
+        bitbucket: "bitbuckt.png",
+        cloudflare: "cloudflare.png",
+        cockroachdb: "cockroachdb.png",
+        cohere: "cohere.png",
+        dagster: "dagster.png",
+        dbt: "dbt.png",
+        deepinfra: "deepinfra.png",
+        deepseek: "deepseek.png",
+        discord: "discord.png",
+        fireworks: "fireworks.png",
+        fivetran: "fivetran.png",
+        github: "github.png",
+        gitlab: "gitlab.png",
+        grok: "grok.png",
+        groq: "groq.png",
+        huggingface: "huggingface.png",
+        lancedb: "lancedb.png",
+        meltano: "meltano.png",
+        milvus: "milvus.png",
+        mistral: "mistral.png",
+        mongodb: "mongodb.png",
+        nebius: "nebius.png",
+        neondb: "neon.png",
+        notion: "notion.png",
+        openai: "openai.png",
+        openrouter: "openrouter.png",
+        perplexity: "perplexity.png",
+        pinecone: "pinecone.png",
+        planetscale: "planetscale.png",
+        prefect: "prefect.png",
+        qdrant: "gdrant.png",
+        qwen: "qwen.png",
+        railway: "railway.png",
+        render: "render.png",
+        replicate: "replicate.png",
+        sendgrid: "sendgrid.png",
+        shopify: "shopify.png",
+        slack: "slack.png",
+        stripe: "stripe.png",
+        supabase: "supabase.png",
+        together: "togetherai.png",
+        twilio: "twilio.png",
+        vercel: "vercel.png",
+        weaviate: "weviate.png",
+        xata: "xata.png",
       };
 
       function toLabel(name) {
@@ -406,7 +456,7 @@
 
         const img = document.createElement("img");
         img.alt = name;
-        img.src = `static/images/logos/${name}.png`;
+        img.src = `static/images/logos/${logoFileMap[name] || `${name}.png`}`;
 
         const fallback = document.createElement("div");
         fallback.className = "logo-fallback";
