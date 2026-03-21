@@ -1,0 +1,11 @@
+vault.db
+.env
+__pycache__/
+venv/
+*.pyc
+instance/
+*.sqlite
+*.sqlite3
+*.log
+.DS_Store
+/backend/__init__.py
