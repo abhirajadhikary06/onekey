@@ -17,7 +17,7 @@
         background: #ffffff;
         color: #111827;
         padding: 2rem;
-        padding-top: 7rem;
+        padding-top: 9rem;
       }
 
       .navbar {
@@ -72,11 +72,34 @@
         box-shadow: 3px 3px 0px #666666;
       }
 
+      .hamburger:hover {
+        transform: translate(2px, 2px);
+        box-shadow: 1px 1px 0px #666666;
+      }
+
+      .hamburger:active {
+        transform: translate(3px, 3px);
+        box-shadow: 0px 0px 0px #666666;
+      }
+
       .hamburger span {
         width: 24px;
         height: 3px;
         background: #ffffff;
         border-radius: 2px;
+        transition: all 0.3s;
+      }
+
+      .hamburger.active span:nth-child(1) {
+        transform: rotate(45deg) translate(6px, 6px);
+      }
+
+      .hamburger.active span:nth-child(2) {
+        opacity: 0;
+      }
+
+      .hamburger.active span:nth-child(3) {
+        transform: rotate(-45deg) translate(6px, -6px);
       }
 
       .navbar-right {
@@ -113,12 +136,31 @@
         font-size: 1rem;
         font-weight: 600;
         cursor: pointer;
+        transition: all 0.2s;
         color: #000000;
         border-bottom: 3px solid #000000;
+        display: flex;
+        align-items: center;
       }
 
       .dropdown-item:last-child {
         border-bottom: none;
+        border-radius: 0 0 8px 8px;
+      }
+
+      .dropdown-item:first-child {
+        border-radius: 8px 8px 0 0;
+      }
+
+      .dropdown-item:hover {
+        background: #f3f4f6;
+      }
+
+      .dropdown-item img {
+        width: 20px;
+        height: 20px;
+        margin-right: 0.5rem;
+        object-fit: contain;
       }
 
       .container {
@@ -157,65 +199,81 @@
       .category-header {
         display: flex;
         align-items: center;
-        justify-content: space-between;
         margin-bottom: 0.9rem;
       }
 
-      .badge {
-        background: #ffd84d;
-        border: 2px solid #000000;
-        border-radius: 8px;
-        padding: 0.2rem 0.6rem;
+      .category-header h2 {
+        font-size: 1.3rem;
         font-weight: 700;
-        font-size: 0.85rem;
       }
 
       .provider-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-        gap: 0.75rem;
+        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+        gap: 0.65rem;
       }
 
       .provider-card {
         border: 3px solid #000000;
         border-radius: 12px;
-        background: #f8fafc;
-        padding: 0.75rem;
+        background: #f0fdf4;
+        padding: 0.65rem 0.75rem;
         display: flex;
         align-items: center;
-        gap: 0.6rem;
-        min-height: 56px;
+        gap: 0.55rem;
+        min-height: 52px;
+        transition: transform 0.15s, box-shadow 0.15s;
+      }
+
+      .provider-card:hover {
+        transform: translate(-2px, -2px);
+        box-shadow: 3px 3px 0px #000000;
       }
 
       .provider-card img {
-        width: 28px;
-        height: 28px;
+        width: 26px;
+        height: 26px;
         object-fit: contain;
+        flex-shrink: 0;
+      }
+
+      .logo-fallback {
+        width: 26px;
+        height: 26px;
+        border-radius: 6px;
+        background: #e5e7eb;
+        border: 2px solid #d1d5db;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.6rem;
+        font-weight: 800;
+        color: #6b7280;
+        flex-shrink: 0;
+        text-transform: uppercase;
       }
 
       .provider-card .name {
         font-weight: 700;
-        font-size: 0.92rem;
+        font-size: 0.82rem;
+        line-height: 1.2;
+        word-break: break-word;
       }
 
-      .provider-card .status {
-        font-size: 0.75rem;
-        color: #475569;
+      @media (max-width: 900px) {
+        .navbar {
+          width: calc(100% - 2rem);
+          top: 1rem;
+        }
+        body { padding-top: 8rem; }
       }
 
-      .provider-meta {
-        display: flex;
-        flex-direction: column;
-      }
-
-      .status-implemented {
-        border-color: #14532d;
-        background: #ecfdf5;
-      }
-
-      .status-planned {
-        border-style: dashed;
-        opacity: 0.9;
+      @media (max-width: 600px) {
+        .navbar-logo span { display: none; }
+        body { padding-top: 7.5rem; }
+        .provider-grid {
+          grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+        }
       }
     </style>
   </head>
@@ -232,9 +290,15 @@
           <span></span>
         </button>
         <div class="dropdown-menu" id="dropdownMenu">
-          <button class="dropdown-item" onclick="goDashboard()">Dashboard</button>
-          <button class="dropdown-item" onclick="goDocs()">Docs</button>
-          <button class="dropdown-item" onclick="goPip()">PIP Package</button>
+          <button class="dropdown-item" onclick="goDashboard()">
+            <img src="static/images/logo.png" onerror="this.style.display='none'" alt="Dashboard" /> Dashboard
+          </button>
+          <button class="dropdown-item" onclick="goDocs()">
+            <img src="static/images/docs.png" onerror="this.style.display='none'" alt="Docs" /> Docs
+          </button>
+          <button class="dropdown-item" onclick="goPip()">
+            <img src="static/images/pypylogo.png" onerror="this.style.display='none'" alt="PIP Package" /> PIP Package
+          </button>
         </div>
       </div>
     </nav>
@@ -243,91 +307,148 @@
       <div class="hero">
         <h1>SDK Integrations</h1>
         <p>
-          One platform API key powers all categories. LLM integrations are implemented now,
+          One platform API key powers all categories. LLM integrations are live now,
           and category-wise integrations are enabled for vector DB, cloud DB, data engineering,
-          and devops passthrough endpoints.
+          devops, and API passthrough endpoints.
         </p>
       </div>
 
       <section class="category">
-        <div class="category-header">
-          <h2>LLM</h2>
-          <span class="badge">implemented</span>
-        </div>
-        <div class="provider-grid">
-          <div class="provider-card status-implemented"><img src="static/images/Assests/openai.png" onerror="this.style.display='none'" alt="openai" /><div class="provider-meta"><span class="name">openai</span><span class="status">proxy ready</span></div></div>
-          <div class="provider-card status-implemented"><img src="static/images/Assests/anthropic.png" onerror="this.style.display='none'" alt="anthropic" /><div class="provider-meta"><span class="name">anthropic / claude</span><span class="status">proxy ready</span></div></div>
-          <div class="provider-card status-implemented"><img src="static/images/Assests/groq.png" onerror="this.style.display='none'" alt="groq" /><div class="provider-meta"><span class="name">groq</span><span class="status">proxy ready</span></div></div>
-          <div class="provider-card status-implemented"><img src="static/images/Assests/gemini.png" onerror="this.style.display='none'" alt="gemini" /><div class="provider-meta"><span class="name">gemini</span><span class="status">proxy ready</span></div></div>
-          <div class="provider-card status-implemented"><img src="static/images/Assests/openrouter.png" onerror="this.style.display='none'" alt="openrouter" /><div class="provider-meta"><span class="name">openrouter</span><span class="status">proxy ready</span></div></div>
-          <div class="provider-card status-implemented"><img src="static/images/Assests/mistral.png" onerror="this.style.display='none'" alt="mistral" /><div class="provider-meta"><span class="name">mistral</span><span class="status">proxy ready</span></div></div>
-          <div class="provider-card status-implemented"><img src="static/images/Assests/perplexity.png" onerror="this.style.display='none'" alt="perplexity" /><div class="provider-meta"><span class="name">perplexity</span><span class="status">proxy ready</span></div></div>
-        </div>
+        <div class="category-header"><h2>LLM</h2></div>
+        <div class="provider-grid" id="grid-llm"></div>
       </section>
 
       <section class="category">
-        <div class="category-header">
-          <h2>Vector DB</h2>
-          <span class="badge">sdk route active</span>
-        </div>
-        <div class="provider-grid">
-          <div class="provider-card status-implemented"><img src="static/images/Assests/pinecone.png" onerror="this.style.display='none'" alt="pinecone" /><div class="provider-meta"><span class="name">pinecone</span><span class="status">passthrough proxy</span></div></div>
-          <div class="provider-card status-implemented"><img src="static/images/Assests/weaviate.png" onerror="this.style.display='none'" alt="weaviate" /><div class="provider-meta"><span class="name">weaviate</span><span class="status">passthrough proxy</span></div></div>
-          <div class="provider-card status-implemented"><img src="static/images/Assests/qdrant.png" onerror="this.style.display='none'" alt="qdrant" /><div class="provider-meta"><span class="name">qdrant</span><span class="status">passthrough proxy</span></div></div>
-          <div class="provider-card status-implemented"><img src="static/images/Assests/milvus.png" onerror="this.style.display='none'" alt="milvus" /><div class="provider-meta"><span class="name">milvus</span><span class="status">passthrough proxy</span></div></div>
-        </div>
+        <div class="category-header"><h2>Vector DB</h2></div>
+        <div class="provider-grid" id="grid-vector_db"></div>
       </section>
 
       <section class="category">
-        <div class="category-header"><h2>Cloud Database</h2><span class="badge">sdk route active</span></div>
-        <div class="provider-grid">
-          <div class="provider-card status-implemented"><img src="static/images/Assests/neondb.png" onerror="this.style.display='none'" alt="neondb" /><div class="provider-meta"><span class="name">neondb</span><span class="status">passthrough proxy</span></div></div>
-          <div class="provider-card status-implemented"><img src="static/images/Assests/redis.png" onerror="this.style.display='none'" alt="redis" /><div class="provider-meta"><span class="name">redis</span><span class="status">passthrough proxy</span></div></div>
-          <div class="provider-card status-implemented"><img src="static/images/Assests/xata.png" onerror="this.style.display='none'" alt="xata" /><div class="provider-meta"><span class="name">xata</span><span class="status">passthrough proxy</span></div></div>
-        </div>
+        <div class="category-header"><h2>Cloud Database</h2></div>
+        <div class="provider-grid" id="grid-database"></div>
       </section>
 
       <section class="category">
-        <div class="category-header"><h2>Data Engineering</h2><span class="badge">sdk route active</span></div>
-        <div class="provider-grid">
-          <div class="provider-card status-implemented"><img src="static/images/Assests/airbyte.png" onerror="this.style.display='none'" alt="airbyte" /><div class="provider-meta"><span class="name">airbyte</span><span class="status">passthrough proxy</span></div></div>
-          <div class="provider-card status-implemented"><img src="static/images/Assests/dbt.png" onerror="this.style.display='none'" alt="dbt" /><div class="provider-meta"><span class="name">dbt</span><span class="status">passthrough proxy</span></div></div>
-          <div class="provider-card status-implemented"><img src="static/images/Assests/fivetran.png" onerror="this.style.display='none'" alt="fivetran" /><div class="provider-meta"><span class="name">fivetran</span><span class="status">passthrough proxy</span></div></div>
-        </div>
+        <div class="category-header"><h2>Data Engineering</h2></div>
+        <div class="provider-grid" id="grid-data_engineering"></div>
       </section>
 
       <section class="category">
-        <div class="category-header"><h2>DevOps</h2><span class="badge">sdk route active</span></div>
-        <div class="provider-grid">
-          <div class="provider-card status-implemented"><img src="static/images/Assests/github.png" onerror="this.style.display='none'" alt="github" /><div class="provider-meta"><span class="name">github</span><span class="status">passthrough proxy</span></div></div>
-          <div class="provider-card status-implemented"><img src="static/images/Assests/gitlab.png" onerror="this.style.display='none'" alt="gitlab" /><div class="provider-meta"><span class="name">gitlab</span><span class="status">passthrough proxy</span></div></div>
-          <div class="provider-card status-implemented"><img src="static/images/Assests/bitbucket.png" onerror="this.style.display='none'" alt="bitbucket" /><div class="provider-meta"><span class="name">bitbucket</span><span class="status">passthrough proxy</span></div></div>
-        </div>
+        <div class="category-header"><h2>DevOps</h2></div>
+        <div class="provider-grid" id="grid-devops"></div>
+      </section>
+
+      <section class="category">
+        <div class="category-header"><h2>APIs</h2></div>
+        <div class="provider-grid" id="grid-apis"></div>
       </section>
     </div>
 
     <script>
+      const categories = {
+        llm: [
+          "openai", "anthropic", "claude", "groq", "gemini", "openrouter", "mistral",
+          "together", "fireworks", "anyscale", "deepinfra", "nebius", "cohere",
+          "ai21", "perplexity", "deepseek", "qwen", "zhipu", "01ai", "grok",
+          "aleph_alpha", "replicate", "baseten", "huggingface"
+        ],
+        database: [
+          "neondb", "redis", "xata", "supabase", "mongodb", "planetscale", "cockroachdb"
+        ],
+        vector_db: [
+          "pinecone", "weaviate", "qdrant", "milvus", "chroma", "pgvector", "lancedb"
+        ],
+        data_engineering: [
+          "airbyte", "dbt", "fivetran", "dagster", "prefect", "airflow", "meltano"
+        ],
+        devops: [
+          "github", "gitlab", "bitbucket", "vercel", "render", "cloudflare", "railway"
+        ],
+        apis: [
+          "stripe", "twilio", "sendgrid", "slack", "notion", "shopify", "discord"
+        ]
+      };
+
+      const displayNames = {
+        "01ai":        "01.AI",
+        "aleph_alpha": "Aleph Alpha",
+        "huggingface": "HuggingFace",
+        "openrouter":  "OpenRouter",
+        "deepinfra":   "DeepInfra",
+        "deepseek":    "DeepSeek",
+        "neondb":      "NeonDB",
+        "pgvector":    "pgvector",
+        "lancedb":     "LanceDB",
+        "planetscale": "PlanetScale",
+        "cockroachdb": "CockroachDB",
+        "sendgrid":    "SendGrid",
+        "together":    "Together AI",
+        "fireworks":   "Fireworks",
+        "anyscale":    "Anyscale",
+        "nebius":      "Nebius",
+        "ai21":        "AI21",
+        "zhipu":       "Zhipu AI",
+        "baseten":     "Baseten",
+        "replicate":   "Replicate",
+        "meltano":     "Meltano",
+        "railway":     "Railway",
+        "cloudflare":  "Cloudflare",
+      };
+
+      function toLabel(name) {
+        if (displayNames[name]) return displayNames[name];
+        return name.charAt(0).toUpperCase() + name.slice(1);
+      }
+
+      function makeCard(name) {
+        const card = document.createElement("div");
+        card.className = "provider-card";
+
+        const img = document.createElement("img");
+        img.alt = name;
+        img.src = `static/images/logos/${name}.png`;
+
+        const fallback = document.createElement("div");
+        fallback.className = "logo-fallback";
+        fallback.textContent = name.slice(0, 2);
+
+        img.onerror = function () {
+          this.style.display = "none";
+          fallback.style.display = "flex";
+        };
+
+        const nameSpan = document.createElement("span");
+        nameSpan.className = "name";
+        nameSpan.textContent = toLabel(name);
+
+        card.appendChild(img);
+        card.appendChild(fallback);
+        card.appendChild(nameSpan);
+        return card;
+      }
+
+      function renderCategory(key) {
+        const grid = document.getElementById("grid-" + key);
+        if (!grid) return;
+        (categories[key] || []).forEach(n => grid.appendChild(makeCard(n)));
+      }
+
+      ["llm", "vector_db", "database", "data_engineering", "devops", "apis"].forEach(renderCategory);
+
+      // Navbar
       function toggleMenu() {
+        document.getElementById("hamburger").classList.toggle("active");
         document.getElementById("dropdownMenu").classList.toggle("active");
       }
+      function goDashboard() { window.location.href = "/static/dashboard.html"; }
+      function goDocs()      { window.location.href = "/static/docs/groq.html"; }
+      function goPip()       { window.location.href = "/static/pip-package.html"; }
 
-      function goDashboard() {
-        window.location.href = "/static/dashboard.html";
-      }
-
-      function goDocs() {
-        window.location.href = "/static/docs/groq.html";
-      }
-
-      function goPip() {
-        window.location.href = "/static/pip-package.html";
-      }
-
-      document.addEventListener("click", function (event) {
-        const menu = document.getElementById("dropdownMenu");
-        const hamburger = document.getElementById("hamburger");
-        if (!menu.contains(event.target) && !hamburger.contains(event.target)) {
-          menu.classList.remove("active");
+      document.addEventListener("click", function (e) {
+        const nav = document.querySelector(".navbar-right");
+        if (!nav.contains(e.target)) {
+          document.getElementById("hamburger").classList.remove("active");
+          document.getElementById("dropdownMenu").classList.remove("active");
         }
       });
     </script>

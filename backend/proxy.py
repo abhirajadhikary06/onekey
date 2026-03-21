@@ -1,4 +1,5 @@
 import time
+import base64
 from datetime import datetime, timezone
 import requests
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
@@ -47,6 +48,28 @@ PROVIDER_CATEGORY_MAP = {
     "github": "devops",
     "gitlab": "devops",
     "bitbucket": "devops",
+    "supabase": "database",
+    "mongodb": "database",
+    "planetscale": "database",
+    "chroma": "vector_db",
+    "pgvector": "vector_db",
+    "dagster": "data_engineering",
+    "prefect": "data_engineering",
+    "airflow": "data_engineering",
+    "vercel": "devops",
+    "render": "devops",
+    "cloudflare": "devops",
+    "stripe": "apis",
+    "twilio": "apis",
+    "sendgrid": "apis",
+    "slack": "apis",
+    "notion": "apis",
+    "shopify": "apis",
+    "cockroachdb": "database",
+    "lancedb": "vector_db",
+    "meltano": "data_engineering",
+    "railway": "devops",
+    "discord": "apis",
 }
 
 PROVIDER_ALIASES = {
@@ -113,21 +136,45 @@ CATEGORY_PROVIDER_CONFIG = {
         "weaviate": {"base_url": None, "auth_header": "Authorization", "bearer": True},
         "qdrant": {"base_url": "https://api.cloud.qdrant.io", "auth_header": "api-key"},
         "milvus": {"base_url": None, "auth_header": "Authorization", "bearer": True},
+        "chroma": {"base_url": "https://api.trychroma.com", "auth_header": "Authorization", "bearer": True},
+        "pgvector": {"base_url": None, "auth_header": "Authorization", "bearer": True},
+        "lancedb": {"base_url": None, "auth_header": "Authorization", "bearer": True},
     },
     "database": {
         "neondb": {"base_url": None, "auth_header": "Authorization", "bearer": True},
         "redis": {"base_url": None, "auth_header": "Authorization", "bearer": True},
         "xata": {"base_url": "https://api.xata.io", "auth_header": "Authorization", "bearer": True},
+        "supabase": {"base_url": "https://api.supabase.com/v1", "auth_header": "apikey"},
+        "mongodb": {"base_url": None, "auth_header": "api-key"},
+        "planetscale": {"base_url": "https://api.planetscale.com/v1", "auth_header": "Authorization", "bearer": True},
+        "cockroachdb": {"base_url": "https://cockroachlabs.cloud/api/v1", "auth_header": "Authorization", "bearer": True},
     },
     "data_engineering": {
         "airbyte": {"base_url": "https://api.airbyte.com/v1", "auth_header": "Authorization", "bearer": True},
         "dbt": {"base_url": "https://cloud.getdbt.com/api/v2", "auth_header": "Authorization", "bearer": True},
         "fivetran": {"base_url": "https://api.fivetran.com/v1", "auth_header": "Authorization", "bearer": True},
+        "dagster": {"base_url": None, "auth_header": "Authorization", "bearer": True},
+        "prefect": {"base_url": "https://api.prefect.cloud/api", "auth_header": "Authorization", "bearer": True},
+        "airflow": {"base_url": None, "auth_header": "Authorization", "bearer": True},
+        "meltano": {"base_url": None, "auth_header": "Authorization", "bearer": True},
     },
     "devops": {
         "github": {"base_url": "https://api.github.com", "auth_header": "Authorization", "bearer": True},
         "gitlab": {"base_url": "https://gitlab.com/api/v4", "auth_header": "Authorization", "bearer": True},
         "bitbucket": {"base_url": "https://api.bitbucket.org/2.0", "auth_header": "Authorization", "bearer": True},
+        "vercel": {"base_url": "https://api.vercel.com", "auth_header": "Authorization", "bearer": True},
+        "render": {"base_url": "https://api.render.com/v1", "auth_header": "Authorization", "bearer": True},
+        "cloudflare": {"base_url": "https://api.cloudflare.com/client/v4", "auth_header": "Authorization", "bearer": True},
+        "railway": {"base_url": "https://backboard.railway.app/graphql/v2", "auth_header": "Authorization", "bearer": True},
+    },
+    "apis": {
+        "stripe": {"base_url": "https://api.stripe.com/v1", "auth_header": "Authorization", "bearer": True},
+        "twilio": {"base_url": "https://api.twilio.com/2010-04-01", "auth_mode": "basic"},
+        "sendgrid": {"base_url": "https://api.sendgrid.com/v3", "auth_header": "Authorization", "bearer": True},
+        "slack": {"base_url": "https://slack.com/api", "auth_header": "Authorization", "bearer": True},
+        "notion": {"base_url": "https://api.notion.com/v1", "auth_header": "Authorization", "bearer": True},
+        "shopify": {"base_url": None, "auth_header": "X-Shopify-Access-Token"},
+        "discord": {"base_url": "https://discord.com/api/v10", "auth_header": "Authorization", "bearer": True},
     },
 }
 
@@ -153,8 +200,12 @@ def _run_category_passthrough(category: str, provider: str, api_key: str, body: 
     url = _safe_target_url(cfg.get("base_url"), endpoint)
 
     headers = dict(body.get("headers", {}))
+    auth_mode = cfg.get("auth_mode", "header")
     auth_header = cfg.get("auth_header", "Authorization")
-    if cfg.get("bearer", False):
+    if auth_mode == "basic":
+        token = base64.b64encode(api_key.encode()).decode()
+        headers["Authorization"] = f"Basic {token}"
+    elif cfg.get("bearer", False):
         headers[auth_header] = f"Bearer {api_key}"
     else:
         headers[auth_header] = api_key
