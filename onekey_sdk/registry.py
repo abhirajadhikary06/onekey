@@ -15,7 +15,7 @@ class IntegrationRegistry:
                 "categories",
                 {
                     "llm": [
-                        "openai", "anthropic", "claude", "groq", "gemini", "openrouter", "mistral",
+                        "openai", "anthropic", "groq", "gemini", "openrouter", "mistral",
                         "together", "fireworks", "anyscale", "deepinfra", "nebius", "cohere",
                         "ai21", "perplexity", "deepseek", "qwen", "grok",
                         "replicate", "baseten", "huggingface",

@@ -86,9 +86,7 @@ PROVIDER_CATEGORY_MAP = {
     "discord": "apis",
 }
 
-PROVIDER_ALIASES = {
-    "claude": "anthropic",
-}
+PROVIDER_ALIASES = {}
 
 
 def _canonical_provider(provider: str) -> str:
