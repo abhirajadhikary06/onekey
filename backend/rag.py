@@ -46,10 +46,11 @@ SQL query used: {query}
 SQL result: {result}
 
 Instructions:
-1. Write a very short, crisp, and direct answer to the user's question using ONLY the provided SQL result.
-2. Do NOT add conversational filler (e.g., "I'd be happy to help", "Here is a summary").
-3. Do NOT mention SQL, queries, or the database. Just give the final answer.
-4. If the SQL result is empty, completely blank, or an error, return EXACTLY the following string and nothing else: "I couldn't find that information right now."
+1. If the SQL result contains 'general', answer the user's Question directly using your general knowledge as the friendly Onekey AI Assistant. Make it short, crisp, and concise!
+2. Otherwise, write a very short, crisp, and direct answer to the user's question using ONLY the provided SQL result.
+3. Do NOT add conversational filler (e.g., "I'd be happy to help", "Here is a summary").
+4. Do NOT mention SQL, queries, or the database. Just give the final answer.
+5. If the SQL result is empty, completely blank, or an error, return EXACTLY the following string and nothing else: "I couldn't find that information right now."
 """
 )
 
@@ -78,7 +79,12 @@ def _build_chain():
     # We need a strict prompt so Llama doesn't output markdown formatting
     # which breaks the SQLAlchemy execution.
     sql_prompt = PromptTemplate.from_template(
-        """You are a PostgreSQL expert. Given an input question, first create a syntactically correct PostgreSQL query to run.
+        """You are a PostgreSQL expert and the Onekey AI Assistant. 
+Analyze the input question.
+If the question is conversational (e.g., "hello", "hi") OR if it is a general question about Onekey (e.g., "what integrations do you support?", "what model are you?"), you MUST return EXACTLY this string and nothing else:
+SELECT 'general';
+
+BUT, if the question requires querying the user's data (API keys, logs, users), create a syntactically correct PostgreSQL query to run.
 Unless the user specifies a specific number of examples to obtain, query for at most 5 results using the LIMIT clause.
 Never query for all columns from a table. You must query only the columns that are needed to answer the question.
 Pay attention to use only the column names you can see in the schema description. Be careful to not query for columns that do not exist.
