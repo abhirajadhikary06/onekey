@@ -418,17 +418,25 @@ def _map_vector_db_operation(provider: str, operation: str, body: dict) -> dict:
 def _map_devops_operation(provider: str, operation: str, body: dict) -> dict:
     if provider == "github":
         if operation == "list_repos":
-            return {"method": "GET", "endpoint": "/user/repos", "params": body.get("params")}
+            # Extract pagination/filter params from body
+            params = {k: v for k, v in body.items() if k in {"per_page", "sort", "direction", "page", "type", "visibility"}}
+            return {"method": "GET", "endpoint": "/user/repos", "params": params if params else body.get("params")}
         if operation == "get_repo":
             return {
                 "method": "GET",
                 "endpoint": f"/repos/{_required(body, 'owner', operation)}/{_required(body, 'repo', operation)}",
             }
         if operation == "list_issues":
-            return {
-                "method": "GET",
-                "endpoint": f"/repos/{_required(body, 'owner', operation)}/{_required(body, 'repo', operation)}/issues",
-            }
+            # If owner/repo not provided, list authenticated user's issues
+            owner = body.get("owner")
+            repo = body.get("repo")
+            if owner and repo:
+                endpoint = f"/repos/{owner}/{repo}/issues"
+            else:
+                endpoint = "/user/issues"
+            # Extract filter params
+            params = {k: v for k, v in body.items() if k in {"state", "assignee", "created", "updated", "sort", "direction", "page", "per_page", "labels", "since"}}
+            return {"method": "GET", "endpoint": endpoint, "params": params if params else None}
         if operation == "create_issue":
             return {
                 "method": "POST",
