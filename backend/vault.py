@@ -8,8 +8,8 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from . import database, dependencies, models, schemas, security, provider_detection
+from .integrations.catalog import PROVIDER_CATEGORY_MAP
 from .platform_key import get_or_create_platform_key
-from .proxy import PROVIDER_CATEGORY_MAP
 
 router = APIRouter(prefix="/keys", tags=["vault"])
 
