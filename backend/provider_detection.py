@@ -50,6 +50,7 @@ PROVIDER_PREFIX_MAP = {
     "rs_": "redis",
     "sbp_": "supabase",
     "pscale_tkn_": "planetscale",
+    "ps_": "planetscale",
     "crdb_": "cockroachdb",
     "pcsk_": "pinecone",
     "wcs_": "weaviate",
