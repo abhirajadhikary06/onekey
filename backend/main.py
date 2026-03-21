@@ -2,7 +2,7 @@
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from .database import engine, Base, run_simple_migrations
-from . import vault, proxy, usage, auth   # ← add auth
+from . import vault, proxy, usage, auth, rag_router   # ← add auth + rag
 from fastapi.responses import RedirectResponse
 
 app = FastAPI(title="Onekey API Vault MVP")
@@ -13,7 +13,8 @@ run_simple_migrations()
 app.include_router(vault.router)
 app.include_router(proxy.router)
 app.include_router(usage.router)
-app.include_router(auth.router)  # ← add this
+app.include_router(auth.router)
+app.include_router(rag_router.router)
 
 app.mount("/static", StaticFiles(directory="frontend"), name="static")
 
