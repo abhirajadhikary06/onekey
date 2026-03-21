@@ -34,6 +34,19 @@ PROVIDER_CATEGORY_MAP = {
     "replicate": "llm",
     "baseten": "llm",
     "huggingface": "llm",
+    "pinecone": "vector_db",
+    "weaviate": "vector_db",
+    "qdrant": "vector_db",
+    "milvus": "vector_db",
+    "neondb": "database",
+    "redis": "database",
+    "xata": "database",
+    "airbyte": "data_engineering",
+    "dbt": "data_engineering",
+    "fivetran": "data_engineering",
+    "github": "devops",
+    "gitlab": "devops",
+    "bitbucket": "devops",
 }
 
 PROVIDER_ALIASES = {
@@ -92,6 +105,80 @@ def _extract_provided_key(x_api_key: str | None, authorization: str | None) -> s
     if not provided_key and authorization and authorization.lower().startswith("bearer "):
         provided_key = authorization.split(" ", 1)[1]
     return provided_key
+
+
+CATEGORY_PROVIDER_CONFIG = {
+    "vector_db": {
+        "pinecone": {"base_url": "https://api.pinecone.io", "auth_header": "Api-Key"},
+        "weaviate": {"base_url": None, "auth_header": "Authorization", "bearer": True},
+        "qdrant": {"base_url": "https://api.cloud.qdrant.io", "auth_header": "api-key"},
+        "milvus": {"base_url": None, "auth_header": "Authorization", "bearer": True},
+    },
+    "database": {
+        "neondb": {"base_url": None, "auth_header": "Authorization", "bearer": True},
+        "redis": {"base_url": None, "auth_header": "Authorization", "bearer": True},
+        "xata": {"base_url": "https://api.xata.io", "auth_header": "Authorization", "bearer": True},
+    },
+    "data_engineering": {
+        "airbyte": {"base_url": "https://api.airbyte.com/v1", "auth_header": "Authorization", "bearer": True},
+        "dbt": {"base_url": "https://cloud.getdbt.com/api/v2", "auth_header": "Authorization", "bearer": True},
+        "fivetran": {"base_url": "https://api.fivetran.com/v1", "auth_header": "Authorization", "bearer": True},
+    },
+    "devops": {
+        "github": {"base_url": "https://api.github.com", "auth_header": "Authorization", "bearer": True},
+        "gitlab": {"base_url": "https://gitlab.com/api/v4", "auth_header": "Authorization", "bearer": True},
+        "bitbucket": {"base_url": "https://api.bitbucket.org/2.0", "auth_header": "Authorization", "bearer": True},
+    },
+}
+
+
+def _safe_target_url(base_url: str | None, endpoint: str | None) -> str:
+    if endpoint and endpoint.startswith("https://"):
+        return endpoint
+    if not base_url or not endpoint:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            "For this provider, supply full HTTPS endpoint in 'endpoint' field",
+        )
+    return f"{base_url.rstrip('/')}/{endpoint.lstrip('/')}"
+
+
+def _run_category_passthrough(category: str, provider: str, api_key: str, body: dict):
+    cfg = CATEGORY_PROVIDER_CONFIG.get(category, {}).get(provider)
+    if not cfg:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Proxy not configured for {category}/{provider}")
+
+    method = str(body.get("method", "POST")).upper()
+    endpoint = body.get("endpoint") or body.get("path")
+    url = _safe_target_url(cfg.get("base_url"), endpoint)
+
+    headers = dict(body.get("headers", {}))
+    auth_header = cfg.get("auth_header", "Authorization")
+    if cfg.get("bearer", False):
+        headers[auth_header] = f"Bearer {api_key}"
+    else:
+        headers[auth_header] = api_key
+
+    params = body.get("params")
+    json_payload = body.get("json")
+    data_payload = body.get("data")
+    timeout = int(body.get("timeout", 60))
+
+    if json_payload is None and data_payload is None:
+        json_payload = {
+            k: v for k, v in body.items()
+            if k not in {"method", "endpoint", "path", "headers", "params", "timeout"}
+        }
+
+    return requests.request(
+        method=method,
+        url=url,
+        headers=headers,
+        params=params,
+        json=json_payload,
+        data=data_payload,
+        timeout=timeout,
+    )
 
 
 def _run_openai(api_key: str, body: dict):
@@ -335,7 +422,7 @@ def _run_huggingface(api_key: str, body: dict):
 # If you have a specific base URL, you can add it similarly.
 
 
-async def _proxy_request(provider: str, key_record: models.ApiKey, request: Request, db: Session):
+async def _proxy_request(provider: str, key_record: models.ApiKey, request: Request, db: Session, category: str = "llm"):
     _ensure_not_expired(key_record)
 
     try:
@@ -346,54 +433,57 @@ async def _proxy_request(provider: str, key_record: models.ApiKey, request: Requ
     api_key = security.decrypt_api_key(key_record.encrypted_key)
 
     start_time = time.time()
-    if provider == "openai":
-        resp = _run_openai(api_key, body)
-    elif provider == "groq":
-        resp = _run_groq(api_key, body)
-    elif provider == "anthropic":
-        resp = _run_anthropic(api_key, body)
-    elif provider == "gemini":
-        resp = _run_gemini(api_key, body)
-    elif provider == "openrouter":
-        resp = _run_openrouter(api_key, body)
-    elif provider == "mistral":
-        resp = _run_mistral(api_key, body)
-    elif provider == "together":
-        resp = _run_together(api_key, body)
-    elif provider == "fireworks":
-        resp = _run_fireworks(api_key, body)
-    elif provider == "anyscale":
-        resp = _run_anyscale(api_key, body)
-    elif provider == "deepinfra":
-        resp = _run_deepinfra(api_key, body)
-    elif provider == "nebius":
-        resp = _run_nebius(api_key, body)
-    elif provider == "cohere":
-        resp = _run_cohere(api_key, body)
-    elif provider == "ai21":
-        resp = _run_ai21(api_key, body)
-    elif provider == "perplexity":
-        resp = _run_perplexity(api_key, body)
-    elif provider == "deepseek":
-        resp = _run_deepseek(api_key, body)
-    elif provider == "qwen":
-        resp = _run_qwen(api_key, body)
-    elif provider == "zhipu":
-        resp = _run_zhipu(api_key, body)
-    elif provider == "01ai":
-        resp = _run_yi(api_key, body)
-    elif provider == "grok":
-        resp = _run_grok(api_key, body)
-    elif provider == "aleph_alpha":
-        resp = _run_aleph_alpha(api_key, body)
-    elif provider == "replicate":
-        resp = _run_replicate(api_key, body)
-    elif provider == "baseten":
-        resp = _run_baseten(api_key, body)
-    elif provider == "huggingface":
-        resp = _run_huggingface(api_key, body)
+    if category == "llm":
+        if provider == "openai":
+            resp = _run_openai(api_key, body)
+        elif provider == "groq":
+            resp = _run_groq(api_key, body)
+        elif provider == "anthropic":
+            resp = _run_anthropic(api_key, body)
+        elif provider == "gemini":
+            resp = _run_gemini(api_key, body)
+        elif provider == "openrouter":
+            resp = _run_openrouter(api_key, body)
+        elif provider == "mistral":
+            resp = _run_mistral(api_key, body)
+        elif provider == "together":
+            resp = _run_together(api_key, body)
+        elif provider == "fireworks":
+            resp = _run_fireworks(api_key, body)
+        elif provider == "anyscale":
+            resp = _run_anyscale(api_key, body)
+        elif provider == "deepinfra":
+            resp = _run_deepinfra(api_key, body)
+        elif provider == "nebius":
+            resp = _run_nebius(api_key, body)
+        elif provider == "cohere":
+            resp = _run_cohere(api_key, body)
+        elif provider == "ai21":
+            resp = _run_ai21(api_key, body)
+        elif provider == "perplexity":
+            resp = _run_perplexity(api_key, body)
+        elif provider == "deepseek":
+            resp = _run_deepseek(api_key, body)
+        elif provider == "qwen":
+            resp = _run_qwen(api_key, body)
+        elif provider == "zhipu":
+            resp = _run_zhipu(api_key, body)
+        elif provider == "01ai":
+            resp = _run_yi(api_key, body)
+        elif provider == "grok":
+            resp = _run_grok(api_key, body)
+        elif provider == "aleph_alpha":
+            resp = _run_aleph_alpha(api_key, body)
+        elif provider == "replicate":
+            resp = _run_replicate(api_key, body)
+        elif provider == "baseten":
+            resp = _run_baseten(api_key, body)
+        elif provider == "huggingface":
+            resp = _run_huggingface(api_key, body)
+        else:
+            raise HTTPException(400, f"Proxy not implemented for {provider}")
     else:
-        raise HTTPException(400, f"Proxy not implemented for {provider}")
+        resp = _run_category_passthrough(category, provider, api_key, body)
 
     latency = int((time.time() - start_time) * 1000)
 
@@ -401,7 +491,7 @@ async def _proxy_request(provider: str, key_record: models.ApiKey, request: Requ
         user_id=key_record.user_id,
         api_key_id=key_record.id,
         api_provider=provider,
-        endpoint_or_model=body.get("model", "unknown"),
+        endpoint_or_model=body.get("model") or body.get("endpoint") or body.get("path") or "unknown",
         status_code=resp.status_code,
         latency_ms=latency,
         total_tokens=resp.json().get("usage", {}).get("total_tokens", 0) if resp.ok else 0,
@@ -427,7 +517,7 @@ async def proxy_request_named(
     if not key_record:
         raise HTTPException(404, f"No {provider} key named {name_slug} found for user")
 
-    return await _proxy_request(provider, key_record, request, db)
+    return await _proxy_request(provider, key_record, request, db, category="llm")
 
 
 @router.post("/{provider}")
@@ -447,7 +537,7 @@ async def proxy_request_default(
     if not key_record:
         raise HTTPException(404, f"No {provider} key found for user")
 
-    return await _proxy_request(provider, key_record, request, db)
+    return await _proxy_request(provider, key_record, request, db, category="llm")
 
 
 @router.post("/u/{provider}/{name_slug}")
@@ -476,7 +566,7 @@ async def proxy_unified(
     if not validate_platform_key(owner, provided_key):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid API key")
 
-    return await _proxy_request(provider, key_record, request, db)
+    return await _proxy_request(provider, key_record, request, db, category="llm")
 
 
 @router.post("/sdk/{category}/{provider}/{name_slug}")
@@ -509,7 +599,7 @@ async def proxy_unified_category(
     if not owner or not validate_platform_key(owner, provided_key):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid platform API key")
 
-    return await _proxy_request(provider, key_record, request, db)
+    return await _proxy_request(provider, key_record, request, db, category=category)
 
 
 @router.post("/sdk/{category}/{provider}")
@@ -544,4 +634,4 @@ async def proxy_unified_category_default(
             f"No API key configured for provider '{provider}'",
         )
 
-    return await _proxy_request(provider, key_record, request, db)
+    return await _proxy_request(provider, key_record, request, db, category=category)

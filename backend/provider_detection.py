@@ -31,6 +31,11 @@ PROVIDER_PREFIX_MAP = {
     "qwen_": "qwen",
     "glm_": "zhipu",
     "yi_": "01ai",
+    "pcsk_": "pinecone",
+    "xau_": "xata",
+    "ghp_": "github",
+    "github_pat_": "github",
+    "glpat-": "gitlab",
 }
 
 

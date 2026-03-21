@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="static/images/favicon.ico" />
+    <title>Integrations - Onekey</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: #ffffff;
+        color: #111827;
+        padding: 2rem;
+        padding-top: 7rem;
+      }
+
+      .navbar {
+        position: fixed;
+        top: 2rem;
+        left: 50%;
+        transform: translateX(-50%);
+        width: calc(100% - 4rem);
+        max-width: 1200px;
+        background: #ffffff;
+        border: 4px solid #000000;
+        border-radius: 16px;
+        box-shadow: 6px 6px 0px #000000;
+        padding: 1rem 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        z-index: 1000;
+      }
+
+      .navbar-logo {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }
+
+      .navbar-logo img {
+        width: 48px;
+        height: 48px;
+        object-fit: contain;
+      }
+
+      .navbar-logo span {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #000000;
+      }
+
+      .hamburger {
+        width: 48px;
+        height: 48px;
+        background: #000000;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        transition: all 0.2s;
+        box-shadow: 3px 3px 0px #666666;
+      }
+
+      .hamburger span {
+        width: 24px;
+        height: 3px;
+        background: #ffffff;
+        border-radius: 2px;
+      }
+
+      .navbar-right {
+        position: relative;
+      }
+
+      .dropdown-menu {
+        position: absolute;
+        top: calc(100% + 1rem);
+        right: 0;
+        background: #ffffff;
+        border: 4px solid #000000;
+        border-radius: 12px;
+        box-shadow: 6px 6px 0px #000000;
+        min-width: 220px;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-10px);
+        transition: all 0.3s;
+      }
+
+      .dropdown-menu.active {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+      }
+
+      .dropdown-item {
+        padding: 1rem 1.5rem;
+        border: none;
+        background: #ffffff;
+        width: 100%;
+        text-align: left;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        color: #000000;
+        border-bottom: 3px solid #000000;
+      }
+
+      .dropdown-item:last-child {
+        border-bottom: none;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+
+      .hero {
+        background: #fff7cf;
+        border: 4px solid #000000;
+        border-radius: 20px;
+        box-shadow: 8px 8px 0px #000000;
+        padding: 1.8rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .hero h1 {
+        font-size: 2.2rem;
+        margin-bottom: 0.6rem;
+      }
+
+      .hero p {
+        color: #374151;
+        line-height: 1.5;
+      }
+
+      .category {
+        background: #ffffff;
+        border: 4px solid #000000;
+        border-radius: 16px;
+        box-shadow: 6px 6px 0px #000000;
+        padding: 1.25rem;
+        margin-bottom: 1rem;
+      }
+
+      .category-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 0.9rem;
+      }
+
+      .badge {
+        background: #ffd84d;
+        border: 2px solid #000000;
+        border-radius: 8px;
+        padding: 0.2rem 0.6rem;
+        font-weight: 700;
+        font-size: 0.85rem;
+      }
+
+      .provider-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 0.75rem;
+      }
+
+      .provider-card {
+        border: 3px solid #000000;
+        border-radius: 12px;
+        background: #f8fafc;
+        padding: 0.75rem;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        min-height: 56px;
+      }
+
+      .provider-card img {
+        width: 28px;
+        height: 28px;
+        object-fit: contain;
+      }
+
+      .provider-card .name {
+        font-weight: 700;
+        font-size: 0.92rem;
+      }
+
+      .provider-card .status {
+        font-size: 0.75rem;
+        color: #475569;
+      }
+
+      .provider-meta {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .status-implemented {
+        border-color: #14532d;
+        background: #ecfdf5;
+      }
+
+      .status-planned {
+        border-style: dashed;
+        opacity: 0.9;
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="navbar">
+      <div class="navbar-logo">
+        <img src="static/images/logo.png" alt="Onekey Logo" />
+        <span>Onekey Integrations</span>
+      </div>
+      <div class="navbar-right">
+        <button class="hamburger" id="hamburger" onclick="toggleMenu()">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+        <div class="dropdown-menu" id="dropdownMenu">
+          <button class="dropdown-item" onclick="goDashboard()">Dashboard</button>
+          <button class="dropdown-item" onclick="goDocs()">Docs</button>
+          <button class="dropdown-item" onclick="goPip()">PIP Package</button>
+        </div>
+      </div>
+    </nav>
+
+    <div class="container">
+      <div class="hero">
+        <h1>SDK Integrations</h1>
+        <p>
+          One platform API key powers all categories. LLM integrations are implemented now,
+          and category-wise integrations are enabled for vector DB, cloud DB, data engineering,
+          and devops passthrough endpoints.
+        </p>
+      </div>
+
+      <section class="category">
+        <div class="category-header">
+          <h2>LLM</h2>
+          <span class="badge">implemented</span>
+        </div>
+        <div class="provider-grid">
+          <div class="provider-card status-implemented"><img src="static/images/Assests/openai.png" onerror="this.style.display='none'" alt="openai" /><div class="provider-meta"><span class="name">openai</span><span class="status">proxy ready</span></div></div>
+          <div class="provider-card status-implemented"><img src="static/images/Assests/anthropic.png" onerror="this.style.display='none'" alt="anthropic" /><div class="provider-meta"><span class="name">anthropic / claude</span><span class="status">proxy ready</span></div></div>
+          <div class="provider-card status-implemented"><img src="static/images/Assests/groq.png" onerror="this.style.display='none'" alt="groq" /><div class="provider-meta"><span class="name">groq</span><span class="status">proxy ready</span></div></div>
+          <div class="provider-card status-implemented"><img src="static/images/Assests/gemini.png" onerror="this.style.display='none'" alt="gemini" /><div class="provider-meta"><span class="name">gemini</span><span class="status">proxy ready</span></div></div>
+          <div class="provider-card status-implemented"><img src="static/images/Assests/openrouter.png" onerror="this.style.display='none'" alt="openrouter" /><div class="provider-meta"><span class="name">openrouter</span><span class="status">proxy ready</span></div></div>
+          <div class="provider-card status-implemented"><img src="static/images/Assests/mistral.png" onerror="this.style.display='none'" alt="mistral" /><div class="provider-meta"><span class="name">mistral</span><span class="status">proxy ready</span></div></div>
+          <div class="provider-card status-implemented"><img src="static/images/Assests/perplexity.png" onerror="this.style.display='none'" alt="perplexity" /><div class="provider-meta"><span class="name">perplexity</span><span class="status">proxy ready</span></div></div>
+        </div>
+      </section>
+
+      <section class="category">
+        <div class="category-header">
+          <h2>Vector DB</h2>
+          <span class="badge">sdk route active</span>
+        </div>
+        <div class="provider-grid">
+          <div class="provider-card status-implemented"><img src="static/images/Assests/pinecone.png" onerror="this.style.display='none'" alt="pinecone" /><div class="provider-meta"><span class="name">pinecone</span><span class="status">passthrough proxy</span></div></div>
+          <div class="provider-card status-implemented"><img src="static/images/Assests/weaviate.png" onerror="this.style.display='none'" alt="weaviate" /><div class="provider-meta"><span class="name">weaviate</span><span class="status">passthrough proxy</span></div></div>
+          <div class="provider-card status-implemented"><img src="static/images/Assests/qdrant.png" onerror="this.style.display='none'" alt="qdrant" /><div class="provider-meta"><span class="name">qdrant</span><span class="status">passthrough proxy</span></div></div>
+          <div class="provider-card status-implemented"><img src="static/images/Assests/milvus.png" onerror="this.style.display='none'" alt="milvus" /><div class="provider-meta"><span class="name">milvus</span><span class="status">passthrough proxy</span></div></div>
+        </div>
+      </section>
+
+      <section class="category">
+        <div class="category-header"><h2>Cloud Database</h2><span class="badge">sdk route active</span></div>
+        <div class="provider-grid">
+          <div class="provider-card status-implemented"><img src="static/images/Assests/neondb.png" onerror="this.style.display='none'" alt="neondb" /><div class="provider-meta"><span class="name">neondb</span><span class="status">passthrough proxy</span></div></div>
+          <div class="provider-card status-implemented"><img src="static/images/Assests/redis.png" onerror="this.style.display='none'" alt="redis" /><div class="provider-meta"><span class="name">redis</span><span class="status">passthrough proxy</span></div></div>
+          <div class="provider-card status-implemented"><img src="static/images/Assests/xata.png" onerror="this.style.display='none'" alt="xata" /><div class="provider-meta"><span class="name">xata</span><span class="status">passthrough proxy</span></div></div>
+        </div>
+      </section>
+
+      <section class="category">
+        <div class="category-header"><h2>Data Engineering</h2><span class="badge">sdk route active</span></div>
+        <div class="provider-grid">
+          <div class="provider-card status-implemented"><img src="static/images/Assests/airbyte.png" onerror="this.style.display='none'" alt="airbyte" /><div class="provider-meta"><span class="name">airbyte</span><span class="status">passthrough proxy</span></div></div>
+          <div class="provider-card status-implemented"><img src="static/images/Assests/dbt.png" onerror="this.style.display='none'" alt="dbt" /><div class="provider-meta"><span class="name">dbt</span><span class="status">passthrough proxy</span></div></div>
+          <div class="provider-card status-implemented"><img src="static/images/Assests/fivetran.png" onerror="this.style.display='none'" alt="fivetran" /><div class="provider-meta"><span class="name">fivetran</span><span class="status">passthrough proxy</span></div></div>
+        </div>
+      </section>
+
+      <section class="category">
+        <div class="category-header"><h2>DevOps</h2><span class="badge">sdk route active</span></div>
+        <div class="provider-grid">
+          <div class="provider-card status-implemented"><img src="static/images/Assests/github.png" onerror="this.style.display='none'" alt="github" /><div class="provider-meta"><span class="name">github</span><span class="status">passthrough proxy</span></div></div>
+          <div class="provider-card status-implemented"><img src="static/images/Assests/gitlab.png" onerror="this.style.display='none'" alt="gitlab" /><div class="provider-meta"><span class="name">gitlab</span><span class="status">passthrough proxy</span></div></div>
+          <div class="provider-card status-implemented"><img src="static/images/Assests/bitbucket.png" onerror="this.style.display='none'" alt="bitbucket" /><div class="provider-meta"><span class="name">bitbucket</span><span class="status">passthrough proxy</span></div></div>
+        </div>
+      </section>
+    </div>
+
+    <script>
+      function toggleMenu() {
+        document.getElementById("dropdownMenu").classList.toggle("active");
+      }
+
+      function goDashboard() {
+        window.location.href = "/static/dashboard.html";
+      }
+
+      function goDocs() {
+        window.location.href = "/static/docs/groq.html";
+      }
+
+      function goPip() {
+        window.location.href = "/static/pip-package.html";
+      }
+
+      document.addEventListener("click", function (event) {
+        const menu = document.getElementById("dropdownMenu");
+        const hamburger = document.getElementById("hamburger");
+        if (!menu.contains(event.target) && !hamburger.contains(event.target)) {
+          menu.classList.remove("active");
+        }
+      });
+    </script>
+  </body>
+</html>

@@ -80,6 +80,70 @@
         box-shadow: 0px 0px 0px #666666;
       }
 
+      .hamburger {
+        width: 48px;
+        height: 48px;
+        background: #000000;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        box-shadow: 3px 3px 0px #666666;
+      }
+
+      .hamburger span {
+        width: 24px;
+        height: 3px;
+        background: #ffffff;
+        border-radius: 2px;
+      }
+
+      .navbar-right {
+        position: relative;
+      }
+
+      .dropdown-menu {
+        position: absolute;
+        top: calc(100% + 1rem);
+        right: 0;
+        background: #ffffff;
+        border: 4px solid #000000;
+        border-radius: 12px;
+        box-shadow: 6px 6px 0px #000000;
+        min-width: 220px;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-10px);
+        transition: all 0.3s;
+      }
+
+      .dropdown-menu.active {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+      }
+
+      .dropdown-item {
+        padding: 1rem 1.2rem;
+        border: none;
+        background: #ffffff;
+        width: 100%;
+        text-align: left;
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+        color: #000000;
+        border-bottom: 3px solid #000000;
+      }
+
+      .dropdown-item:last-child {
+        border-bottom: none;
+      }
+
       .integration-nav {
         position: fixed;
         top: 9rem;
@@ -343,7 +407,18 @@
         <img src="../static/images/logo.png" alt="onekey" />
         <span>onekey</span>
       </div>
-      <button class="back-button" onclick="goBack()"><- Back to Dashboard</button>
+      <div class="navbar-right">
+        <button class="hamburger" id="hamburger" onclick="toggleMenu()">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+        <div class="dropdown-menu" id="dropdownMenu">
+          <button class="dropdown-item" onclick="goBack()">Dashboard</button>
+          <button class="dropdown-item" onclick="goDocsHome()">Docs Home</button>
+          <button class="dropdown-item" onclick="goIntegrations()">Integrations</button>
+        </div>
+      </div>
     </nav>
 
     <div class="integration-nav">
@@ -443,6 +518,18 @@ for m in msgs:
         window.location.href = "/static/dashboard.html";
       }
 
+      function goDocsHome() {
+        window.location.href = "/static/docs/groq.html";
+      }
+
+      function goIntegrations() {
+        window.location.href = "/static/integrations.html";
+      }
+
+      function toggleMenu() {
+        document.getElementById('dropdownMenu').classList.toggle('active');
+      }
+
       function showCode(type) {
         const codeBlocks = document.querySelectorAll('.code-block');
         const toggleBtns = document.querySelectorAll('.toggle-btn');
@@ -480,6 +567,15 @@ for m in msgs:
 
       window.addEventListener('load', () => {
         showCode('python');
+      });
+
+      document.addEventListener('click', function (event) {
+        const menu = document.getElementById('dropdownMenu');
+        const hamburger = document.getElementById('hamburger');
+        if (!menu || !hamburger) return;
+        if (!menu.contains(event.target) && !hamburger.contains(event.target)) {
+          menu.classList.remove('active');
+        }
       });
     </script>
   </body>

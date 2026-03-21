@@ -22,6 +22,10 @@ class IntegrationRegistry:
                         "ai21", "perplexity", "deepseek", "qwen", "zhipu", "01ai", "grok",
                         "aleph_alpha", "replicate", "baseten", "huggingface",
                     ],
+                    "database": ["neondb", "redis", "xata"],
+                    "vector_db": ["pinecone", "weaviate", "qdrant", "milvus"],
+                    "data_engineering": ["airbyte", "dbt", "fivetran"],
+                    "devops": ["github", "gitlab", "bitbucket"],
                 },
             )
         if self.planned_categories is None:
@@ -29,10 +33,10 @@ class IntegrationRegistry:
                 self,
                 "planned_categories",
                 {
-                    "database": ["neondb", "redis", "xata", "supabase", "mongodb", "planetscale"],
-                    "vector_db": ["pinecone", "weaviate", "qdrant", "milvus", "chroma", "pgvector"],
-                    "data_engineering": ["airbyte", "dbt", "fivetran", "dagster", "prefect", "airflow"],
-                    "devops": ["github", "gitlab", "bitbucket", "vercel", "render", "cloudflare"],
+                    "database": ["supabase", "mongodb", "planetscale"],
+                    "vector_db": ["chroma", "pgvector"],
+                    "data_engineering": ["dagster", "prefect", "airflow"],
+                    "devops": ["vercel", "render", "cloudflare"],
                     "apis": ["stripe", "twilio", "sendgrid", "slack", "notion", "shopify"],
                 },
             )

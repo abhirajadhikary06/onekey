@@ -31,6 +31,7 @@ def _mask_api_key(key: str) -> str:
 class ApiKeyCreate(BaseModel):
     name: str
     key: str
+    provider: Optional[str] = None
     expires_at: Optional[datetime] = None
 
 
@@ -55,11 +56,17 @@ def add_key(
                 detail=f"Free users can only have {MAX_FREE_API_KEYS} API keys. Please delete existing keys or upgrade to premium.",
             )
     
-    # Auto-detect provider from API key
-    try:
-        provider = provider_detection.detect_provider(key_in.key)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    if key_in.provider:
+        provider = key_in.provider.strip().lower()
+    else:
+        # Auto-detect provider from API key
+        try:
+            provider = provider_detection.detect_provider(key_in.key)
+        except ValueError as e:
+            raise HTTPException(
+                status_code=400,
+                detail=f"{str(e)}. You can also pass provider explicitly in request payload.",
+            )
     
     provider_slug = _slugify(provider)
     name_slug = _slugify(key_in.name)
