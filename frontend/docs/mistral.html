@@ -297,7 +297,7 @@
       }
 
       li:before {
-        content: "▪";
+        content: "-";
         position: absolute;
         left: 0;
         font-weight: 700;
@@ -345,7 +345,7 @@
         <span>onekey</span>
       </div>
       <button class="back-button" onclick="goBack()">
-        ← Back to Dashboard
+        <- Back to Dashboard
       </button>
     </nav>
 
@@ -368,7 +368,7 @@
         exceptional performance and efficiency. Their models like Mixtral 8x7B
         and Mistral 7B offer powerful reasoning capabilities while maintaining
         fast inference speeds. Use Onekey to seamlessly integrate Mistral AI
-        models into your applications with unified API key management.
+        models into your applications with platform API key management.
       </p>
 
       <div class="section">
@@ -395,9 +395,9 @@ msgs = [
 
 for m in msgs:
     print(requests.post(
-        "https://onekey-8pr2.onrender.com/proxy/u/mistral/&lt;api-key-name&gt;",
+        "https://onekey-ciwz.onrender.com/proxy/sdk/llm/mistral",
         headers={
-            "Authorization": "Bearer apikey-mistral-&lt;api-key-name&gt;",
+            "Authorization": "Bearer okp-&lt;your-platform-key&gt;",
             "Content-Type": "application/json"
         },
         json={
@@ -413,8 +413,8 @@ for m in msgs:
           </button>
           <pre
             id="curl-code-text"
-          ><code>curl -X POST https://onekey-8pr2.onrender.com/proxy/u/mistral/&lt;api-key-name&gt; \
-  -H "Authorization: Bearer apikey-mistral-&lt;api-key-name&gt;" \
+          ><code>curl -X POST https://onekey-ciwz.onrender.com/proxy/sdk/llm/mistral \
+  -H "Authorization: Bearer okp-&lt;your-platform-key&gt;" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "mistral/mistral-large-latest",
@@ -432,7 +432,7 @@ for m in msgs:
         <h2>Parameters</h2>
         <ul>
           <li>
-            <strong>&lt;api-key-name&gt;</strong> - Replace with your API key
+            <strong>okp-&lt;your-platform-key&gt;</strong> - Your Onekey platform API key
             name from the dashboard
           </li>
           <li>
@@ -500,9 +500,9 @@ for m in msgs:
           <pre id="code-gen-text"><code>import requests
 
 response = requests.post(
-    "https://onekey-8pr2.onrender.com/proxy/u/mistral/&lt;api-key-name&gt;",
+    "https://onekey-ciwz.onrender.com/proxy/sdk/llm/mistral",
     headers={
-        "Authorization": "Bearer apikey-mistral-&lt;api-key-name&gt;",
+        "Authorization": "Bearer okp-&lt;your-platform-key&gt;",
         "Content-Type": "application/json"
     },
     json={
@@ -590,7 +590,7 @@ print(response.json())</code></pre>
           const btn = buttonEl;
           const originalHTML = btn.innerHTML;
           btn.innerHTML =
-            '<img src="../static/images/copy.png" alt="Copy" /> <span class="copy-confirm">✓ Copied..</span>';
+            '<img src="../static/images/copy.png" alt="Copy" /> <span class="copy-confirm">OK Copied..</span>';
           setTimeout(() => {
             btn.innerHTML = originalHTML;
           }, 2000);
@@ -603,3 +603,5 @@ print(response.json())</code></pre>
     </script>
   </body>
 </html>
+
+

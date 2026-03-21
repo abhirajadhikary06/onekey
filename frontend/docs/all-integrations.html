@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="../static/images/favicon.ico" />
+    <title>All Integrations - onekey Docs</title>
+    <style>
+      body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background:#fff; color:#111827; padding:2rem; }
+      .container { max-width: 1100px; margin: 0 auto; }
+      .section { border: 3px solid #000; border-radius: 12px; box-shadow: 6px 6px 0 #000; padding: 1.4rem; margin-bottom: 1.4rem; background: #fff; }
+      table { width: 100%; border-collapse: collapse; }
+      th, td { border: 2px solid #000; padding: 0.6rem; text-align: left; }
+      th { background: #f3f4f6; }
+      code, pre { font-family: "Courier New", monospace; }
+      pre { background:#f3f4f6; border:2px solid #000; border-radius:8px; padding:1rem; overflow:auto; }
+      .links a { display:inline-block; margin:0 0.5rem 0.5rem 0; border:2px solid #000; border-radius:7px; padding:0.35rem 0.7rem; text-decoration:none; color:#000; font-weight:600; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>All Integrations</h1>
+      <p>This page tracks integrations that are currently implemented and tested in proxy execution.</p>
+
+      <div class="section">
+        <h2>Implemented (Working Now)</h2>
+        <p>Route format for SDK and direct calls:</p>
+        <pre><code>POST /proxy/sdk/llm/{provider}
+Authorization: Bearer &lt;ONEKEY_PLATFORM_API_KEY&gt;</code></pre>
+        <table>
+          <thead>
+            <tr><th>Provider</th><th>Category</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>openai</td><td>llm</td><td>supported</td></tr>
+            <tr><td>anthropic (claude alias supported)</td><td>llm</td><td>supported</td></tr>
+            <tr><td>groq</td><td>llm</td><td>supported</td></tr>
+            <tr><td>gemini</td><td>llm</td><td>supported</td></tr>
+            <tr><td>openrouter</td><td>llm</td><td>supported</td></tr>
+            <tr><td>mistral</td><td>llm</td><td>supported</td></tr>
+            <tr><td>together</td><td>llm</td><td>supported</td></tr>
+            <tr><td>fireworks</td><td>llm</td><td>supported</td></tr>
+            <tr><td>anyscale</td><td>llm</td><td>supported</td></tr>
+            <tr><td>deepinfra</td><td>llm</td><td>supported</td></tr>
+            <tr><td>nebius</td><td>llm</td><td>supported</td></tr>
+            <tr><td>cohere</td><td>llm</td><td>supported</td></tr>
+            <tr><td>ai21</td><td>llm</td><td>supported</td></tr>
+            <tr><td>perplexity</td><td>llm</td><td>supported</td></tr>
+            <tr><td>deepseek</td><td>llm</td><td>supported</td></tr>
+            <tr><td>qwen</td><td>llm</td><td>supported</td></tr>
+            <tr><td>zhipu</td><td>llm</td><td>supported</td></tr>
+            <tr><td>01ai (yi alias supported)</td><td>llm</td><td>supported</td></tr>
+            <tr><td>grok</td><td>llm</td><td>supported</td></tr>
+            <tr><td>aleph_alpha</td><td>llm</td><td>supported</td></tr>
+            <tr><td>replicate</td><td>llm</td><td>supported</td></tr>
+            <tr><td>baseten</td><td>llm</td><td>supported</td></tr>
+            <tr><td>huggingface</td><td>llm</td><td>supported</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="section">
+        <h2>Provider Docs</h2>
+        <div class="links">
+          <a href="groq.html">Groq</a>
+          <a href="openrouter.html">OpenRouter</a>
+          <a href="gemini.html">Gemini</a>
+          <a href="openai.html">OpenAI</a>
+          <a href="anthropic.html">Claude</a>
+          <a href="mistral.html">Mistral</a>
+          <a href="perplexity.html">Perplexity</a>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>Planned Categories</h2>
+        <p>database, vector_db, data_engineering, devops, and apis are in SDK planning and registry metadata, but backend execution for those categories is not enabled yet.</p>
+      </div>
+    </div>
+  </body>
+</html>

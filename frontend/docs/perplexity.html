@@ -297,7 +297,7 @@
       }
 
       li:before {
-        content: "▪";
+        content: "-";
         position: absolute;
         left: 0;
         font-weight: 700;
@@ -345,7 +345,7 @@
         <span>onekey</span>
       </div>
       <button class="back-button" onclick="goBack()">
-        ← Back to Dashboard
+        <- Back to Dashboard
       </button>
     </nav>
 
@@ -395,9 +395,9 @@ msgs = [
 
 for m in msgs:
     print(requests.post(
-        "https://onekey-8pr2.onrender.com/proxy/u/perplexity/&lt;api-key-name&gt;",
+        "https://onekey-ciwz.onrender.com/proxy/sdk/llm/perplexity",
         headers={
-            "Authorization": "Bearer apikey-perplexity-&lt;api-key-name&gt;",
+            "Authorization": "Bearer okp-&lt;your-platform-key&gt;",
             "Content-Type": "application/json"
         },
         json={
@@ -413,8 +413,8 @@ for m in msgs:
           </button>
           <pre
             id="curl-code-text"
-          ><code>curl -X POST https://onekey-8pr2.onrender.com/proxy/u/perplexity/&lt;api-key-name&gt; \
-  -H "Authorization: Bearer apikey-perplexity-&lt;api-key-name&gt;" \
+          ><code>curl -X POST https://onekey-ciwz.onrender.com/proxy/sdk/llm/perplexity \
+  -H "Authorization: Bearer okp-&lt;your-platform-key&gt;" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "perplexity/llama-3.1-sonar-small-128k-online",
@@ -432,7 +432,7 @@ for m in msgs:
         <h2>Parameters</h2>
         <ul>
           <li>
-            <strong>&lt;api-key-name&gt;</strong> - Replace with your API key
+            <strong>okp-&lt;your-platform-key&gt;</strong> - Your Onekey platform API key
             name from the dashboard
           </li>
           <li>
@@ -525,9 +525,9 @@ for m in msgs:
           <pre id="research-code-text"><code>import requests
 
 response = requests.post(
-    "https://onekey-8pr2.onrender.com/proxy/u/perplexity/&lt;api-key-name&gt;",
+    "https://onekey-ciwz.onrender.com/proxy/sdk/llm/perplexity",
     headers={
-        "Authorization": "Bearer apikey-perplexity-&lt;api-key-name&gt;",
+        "Authorization": "Bearer okp-&lt;your-platform-key&gt;",
         "Content-Type": "application/json"
     },
     json={
@@ -620,7 +620,7 @@ print(result)
           const btn = buttonEl;
           const originalHTML = btn.innerHTML;
           btn.innerHTML =
-            '<img src="../static/images/copy.png" alt="Copy" /> <span class="copy-confirm">✓ Copied..</span>';
+            '<img src="../static/images/copy.png" alt="Copy" /> <span class="copy-confirm">OK Copied..</span>';
           setTimeout(() => {
             btn.innerHTML = originalHTML;
           }, 2000);
@@ -633,3 +633,5 @@ print(result)
     </script>
   </body>
 </html>
+
+

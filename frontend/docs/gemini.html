@@ -314,7 +314,7 @@
       }
 
       li:before {
-        content: "▪";
+        content: "-";
         position: absolute;
         left: 0;
         font-weight: 700;
@@ -362,7 +362,7 @@
         <img src="../static/images/logo.png" alt="onekey" />
         <span>onekey</span>
       </div>
-      <button class="back-button" onclick="goBack()">← Back to Dashboard</button>
+      <button class="back-button" onclick="goBack()"><- Back to Dashboard</button>
     </nav>
 
     <!-- Integration Navigation -->
@@ -382,7 +382,7 @@
     <div class="container">
       <h1>Onekey with Gemini</h1>
       <p class="subtitle">
-        Google's Gemini is a powerful multimodal AI model capable of understanding and generating text, code, images, and more. Use Onekey to integrate Gemini's advanced capabilities with unified API key management and usage tracking across all your AI services.
+        Google's Gemini is a powerful multimodal AI model capable of understanding and generating text, code, images, and more. Use Onekey to integrate Gemini's advanced capabilities with platform API key management and usage tracking across all your AI services.
       </p>
 
       <!-- Code Examples Section -->
@@ -407,9 +407,9 @@ msgs = [
 
 for m in msgs:
     print(requests.post(
-        "https://onekey-8pr2.onrender.com/proxy/u/gemini/&lt;api-key-name&gt;",
+        "https://onekey-ciwz.onrender.com/proxy/sdk/llm/gemini",
         headers={
-            "Authorization": "Bearer apikey-gemini-&lt;api-key-name&gt;",
+            "Authorization": "Bearer okp-&lt;your-platform-key&gt;",
             "Content-Type": "application/json"
         },
         json={
@@ -422,8 +422,8 @@ for m in msgs:
         <!-- cURL Code Block -->
         <div class="code-block" id="curl-code">
           <button class="copy-btn" onclick="copyCode('curl-code-text', this)"><img src="../static/images/copy.png" alt="Copy" /> Copy</button>
-          <pre id="curl-code-text"><code>curl -X POST https://onekey-8pr2.onrender.com/proxy/u/gemini/&lt;api-key-name&gt; \
-  -H "Authorization: Bearer apikey-gemini-&lt;api-key-name&gt;" \
+          <pre id="curl-code-text"><code>curl -X POST https://onekey-ciwz.onrender.com/proxy/sdk/llm/gemini \
+  -H "Authorization: Bearer okp-&lt;your-platform-key&gt;" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "gemini/gemini-2.0-flash-exp",
@@ -441,7 +441,7 @@ for m in msgs:
       <div class="section">
         <h2>Parameters</h2>
         <ul>
-          <li><strong>&lt;api-key-name&gt;</strong> - Replace with your API key name from the dashboard</li>
+          <li><strong>okp-&lt;your-platform-key&gt;</strong> - Your Onekey platform API key from the dashboard</li>
           <li><strong>model</strong> - Gemini model ID (e.g., gemini/gemini-2.0-flash-exp, gemini/gemini-pro)</li>
           <li><strong>messages</strong> - Array of message objects with role and content</li>
         </ul>
@@ -498,7 +498,7 @@ for m in msgs:
         navigator.clipboard.writeText(code).then(() => {
           const btn = buttonEl;
           const originalHTML = btn.innerHTML;
-          btn.innerHTML = '<img src="../static/images/copy.png" alt="Copy" /> <span class="copy-confirm">✓ Copied..</span>';
+          btn.innerHTML = '<img src="../static/images/copy.png" alt="Copy" /> <span class="copy-confirm">OK Copied..</span>';
           setTimeout(() => {
             btn.innerHTML = originalHTML;
           }, 2000);
@@ -507,3 +507,5 @@ for m in msgs:
     </script>
   </body>
 </html>
+
+

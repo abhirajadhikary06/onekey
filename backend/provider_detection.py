@@ -8,6 +8,7 @@ Add new providers here to expand platform support.
 PROVIDER_PREFIX_MAP = {
     "sk-or-": "openrouter",
     "sk-ant-": "anthropic",
+    "claude-": "anthropic",
     "sk-": "openai",
     "AIza": "gemini",
     "xai-": "grok",
@@ -24,7 +25,6 @@ PROVIDER_PREFIX_MAP = {
     "aa_": "aleph_alpha",
     "r8_": "replicate",
     "bt_": "baseten",
-    "modal_": "modal",
     "hf_": "huggingface",
     "pplx-": "perplexity",
     "ds_": "deepseek",

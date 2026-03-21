@@ -315,7 +315,7 @@
       }
 
       li:before {
-        content: "▪";
+        content: "-";
         position: absolute;
         left: 0;
         font-weight: 700;
@@ -365,7 +365,7 @@
         <span>onekey</span>
       </div>
       <button class="back-button" onclick="goBack()">
-        ← Back to Dashboard
+        <- Back to Dashboard
       </button>
     </nav>
 
@@ -390,6 +390,9 @@
         >
         <a href="perplexity.html" class="integration-tab {{PERPLEXITY_ACTIVE}}"
           >Perplexity</a
+        >
+        <a href="all-integrations.html" class="integration-tab {{ALL_ACTIVE}}"
+          >All Integrations</a
         >
       </div>
     </div>
@@ -437,7 +440,7 @@
           const btn = buttonEl;
           const originalHTML = btn.innerHTML;
           btn.innerHTML =
-            '<img src="../static/images/copy.png" alt="Copy" /> <span class="copy-confirm">✓ Copied..</span>';
+            '<img src="../static/images/copy.png" alt="Copy" /> <span class="copy-confirm">OK Copied..</span>';
           setTimeout(() => {
             btn.innerHTML = originalHTML;
           }, 2000);
@@ -451,3 +454,4 @@
     </script>
   </body>
 </html>
+

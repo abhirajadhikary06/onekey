@@ -36,6 +36,16 @@ PROVIDER_CATEGORY_MAP = {
     "huggingface": "llm",
 }
 
+PROVIDER_ALIASES = {
+    "claude": "anthropic",
+    "yi": "01ai",
+}
+
+
+def _canonical_provider(provider: str) -> str:
+    provider = provider.lower().strip()
+    return PROVIDER_ALIASES.get(provider, provider)
+
 
 def _normalize_category(category: str) -> str:
     return category.strip().lower().replace(" ", "").replace("-", "")
@@ -412,7 +422,7 @@ async def proxy_request_named(
     db: Session = Depends(database.get_db),
     current_user: models.User = Depends(dependencies.get_current_user),
 ):
-    provider = provider.lower()
+    provider = _canonical_provider(provider)
     key_record = _find_key_by_name(db, provider, name_slug, current_user.id)
     if not key_record:
         raise HTTPException(404, f"No {provider} key named {name_slug} found for user")
@@ -427,7 +437,7 @@ async def proxy_request_default(
     db: Session = Depends(database.get_db),
     current_user: models.User = Depends(dependencies.get_current_user),
 ):
-    provider = provider.lower()
+    provider = _canonical_provider(provider)
     key_record = (
         db.query(models.ApiKey)
         .filter(models.ApiKey.user_id == current_user.id, models.ApiKey.api_provider == provider)
@@ -449,7 +459,7 @@ async def proxy_unified(
     x_api_key: str | None = Header(default=None, convert_underscores=False),
     authorization: str | None = Header(default=None),
 ):
-    provider = provider.lower()
+    provider = _canonical_provider(provider)
     key_record = _find_key_by_name(db, provider, name_slug, user_id=None)
     if not key_record:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Unified key not found")
@@ -479,7 +489,7 @@ async def proxy_unified_category(
     x_api_key: str | None = Header(default=None, convert_underscores=False),
     authorization: str | None = Header(default=None),
 ):
-    provider = provider.lower()
+    provider = _canonical_provider(provider)
     key_record = _find_key_by_name(db, provider, name_slug, user_id=None)
     if not key_record:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Unified key not found")
@@ -511,7 +521,7 @@ async def proxy_unified_category_default(
     x_api_key: str | None = Header(default=None, convert_underscores=False),
     authorization: str | None = Header(default=None),
 ):
-    provider = provider.lower()
+    provider = _canonical_provider(provider)
 
     if not _provider_in_category(provider, category):
         raise HTTPException(

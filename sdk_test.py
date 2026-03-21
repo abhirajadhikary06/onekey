@@ -22,7 +22,7 @@ def main():
     base_url = os.getenv("ONEKEY_BASE_URL", "https://onekey-ciwz.onrender.com")
     provider = os.getenv("ONEKEY_PROVIDER", "groq")
     model = os.getenv("ONEKEY_MODEL", "llama-3.3-70b-versatile")
-    prompt = os.getenv("ONEKEY_PROMPT", "Hello from Onekey SDK test")
+    prompt = os.getenv("ONEKEY_PROMPT", "What is GROQ?")
 
     platform_key = os.getenv("ONEKEY_PLATFORM_API_KEY")
     jwt_token = os.getenv("ONEKEY_JWT")
