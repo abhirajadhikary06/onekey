@@ -2,13 +2,33 @@ import time
 import base64
 from datetime import datetime, timezone
 import requests
-from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
+from fastapi import APIRouter, Body, Depends, Header, HTTPException, status
+from requests.adapters import HTTPAdapter
 from sqlalchemy.orm import Session
+from urllib3.util.retry import Retry
 
 from . import database, dependencies, models, security
 from .platform_key import get_user_for_platform_key, validate_platform_key
 
 router = APIRouter(prefix="/proxy", tags=["proxy"])
+
+# Reuse outbound connections to reduce DNS/TCP/TLS handshake overhead.
+_HTTP = requests.Session()
+_ADAPTER = HTTPAdapter(
+    pool_connections=128,
+    pool_maxsize=128,
+    max_retries=Retry(total=0, connect=0, read=0, redirect=0),
+)
+_HTTP.mount("https://", _ADAPTER)
+_HTTP.mount("http://", _ADAPTER)
+
+
+def _http_post(url: str, *, headers: dict | None = None, json: dict | None = None, timeout: int = 60):
+    return _HTTP.post(url, headers=headers, json=json, timeout=timeout)
+
+
+def _http_get(url: str, *, headers: dict | None = None, timeout: int = 60):
+    return _HTTP.get(url, headers=headers, timeout=timeout)
 
 
 PROVIDER_CATEGORY_MAP = {
@@ -211,7 +231,7 @@ def _run_category_passthrough(category: str, provider: str, api_key: str, body: 
             if k not in {"method", "endpoint", "path", "headers", "params", "timeout"}
         }
 
-    return requests.request(
+    return _HTTP.request(
         method=method,
         url=url,
         headers=headers,
@@ -228,7 +248,7 @@ def _run_openai(api_key: str, body: dict):
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-    return requests.post(url, headers=headers, json=body)
+    return _http_post(url, headers=headers, json=body)
 
 
 def _run_groq(api_key: str, body: dict):
@@ -237,7 +257,7 @@ def _run_groq(api_key: str, body: dict):
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-    return requests.post(url, headers=headers, json=body)
+    return _http_post(url, headers=headers, json=body)
 
 
 def _run_anthropic(api_key: str, body: dict):
@@ -247,14 +267,14 @@ def _run_anthropic(api_key: str, body: dict):
         "anthropic-version": "2023-06-01",
         "Content-Type": "application/json",
     }
-    return requests.post(url, headers=headers, json=body)
+    return _http_post(url, headers=headers, json=body)
 
 
 def _run_gemini(api_key: str, body: dict):
     # Gemini uses a different format - model in URL
     model = body.get("model", "gemini-2.5-flash")
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
-    return requests.post(url, json=body)
+    return _http_post(url, json=body)
 
 
 def _run_openrouter(api_key: str, body: dict):
@@ -263,7 +283,7 @@ def _run_openrouter(api_key: str, body: dict):
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-    return requests.post(url, headers=headers, json=body)
+    return _http_post(url, headers=headers, json=body)
 
 
 def _run_mistral(api_key: str, body: dict):
@@ -272,7 +292,7 @@ def _run_mistral(api_key: str, body: dict):
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-    return requests.post(url, headers=headers, json=body)
+    return _http_post(url, headers=headers, json=body)
 
 
 def _run_together(api_key: str, body: dict):
@@ -281,7 +301,7 @@ def _run_together(api_key: str, body: dict):
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-    return requests.post(url, headers=headers, json=body)
+    return _http_post(url, headers=headers, json=body)
 
 
 def _run_fireworks(api_key: str, body: dict):
@@ -290,7 +310,7 @@ def _run_fireworks(api_key: str, body: dict):
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-    return requests.post(url, headers=headers, json=body)
+    return _http_post(url, headers=headers, json=body)
 
 
 def _run_anyscale(api_key: str, body: dict):
@@ -299,7 +319,7 @@ def _run_anyscale(api_key: str, body: dict):
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-    return requests.post(url, headers=headers, json=body)
+    return _http_post(url, headers=headers, json=body)
 
 
 def _run_deepinfra(api_key: str, body: dict):
@@ -308,7 +328,7 @@ def _run_deepinfra(api_key: str, body: dict):
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-    return requests.post(url, headers=headers, json=body)
+    return _http_post(url, headers=headers, json=body)
 
 
 def _run_nebius(api_key: str, body: dict):
@@ -317,7 +337,7 @@ def _run_nebius(api_key: str, body: dict):
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-    return requests.post(url, headers=headers, json=body)
+    return _http_post(url, headers=headers, json=body)
 
 
 def _run_cohere(api_key: str, body: dict):
@@ -326,7 +346,7 @@ def _run_cohere(api_key: str, body: dict):
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-    return requests.post(url, headers=headers, json=body)
+    return _http_post(url, headers=headers, json=body)
 
 
 def _run_ai21(api_key: str, body: dict):
@@ -335,7 +355,7 @@ def _run_ai21(api_key: str, body: dict):
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-    return requests.post(url, headers=headers, json=body)
+    return _http_post(url, headers=headers, json=body)
 
 
 def _run_perplexity(api_key: str, body: dict):
@@ -344,7 +364,7 @@ def _run_perplexity(api_key: str, body: dict):
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-    return requests.post(url, headers=headers, json=body)
+    return _http_post(url, headers=headers, json=body)
 
 
 def _run_deepseek(api_key: str, body: dict):
@@ -353,7 +373,7 @@ def _run_deepseek(api_key: str, body: dict):
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-    return requests.post(url, headers=headers, json=body)
+    return _http_post(url, headers=headers, json=body)
 
 
 def _run_qwen(api_key: str, body: dict):
@@ -362,7 +382,7 @@ def _run_qwen(api_key: str, body: dict):
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-    return requests.post(url, headers=headers, json=body)
+    return _http_post(url, headers=headers, json=body)
 
 
 def _run_grok(api_key: str, body: dict):
@@ -371,7 +391,7 @@ def _run_grok(api_key: str, body: dict):
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-    return requests.post(url, headers=headers, json=body)
+    return _http_post(url, headers=headers, json=body)
 
 
 def _run_replicate(api_key: str, body: dict):
@@ -380,7 +400,7 @@ def _run_replicate(api_key: str, body: dict):
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-    create_resp = requests.post(create_url, headers=headers, json=body)
+    create_resp = _http_post(create_url, headers=headers, json=body)
     if create_resp.status_code >= 400:
         return create_resp
     prediction = create_resp.json()
@@ -390,7 +410,7 @@ def _run_replicate(api_key: str, body: dict):
     
     while True:
         get_url = f"https://api.replicate.com/v1/predictions/{prediction_id}"
-        get_resp = requests.get(get_url, headers=headers)
+        get_resp = _http_get(get_url, headers=headers)
         if get_resp.status_code >= 400:
             return get_resp
         data = get_resp.json()
@@ -407,7 +427,7 @@ def _run_baseten(api_key: str, body: dict):
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-    return requests.post(url, headers=headers, json=body)
+    return _http_post(url, headers=headers, json=body)
 
 
 def _run_huggingface(api_key: str, body: dict):
@@ -416,20 +436,15 @@ def _run_huggingface(api_key: str, body: dict):
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-    return requests.post(url, headers=headers, json=body)
+    return _http_post(url, headers=headers, json=body)
 
 # Note: For "modal", no fixed API endpoint as it's a deployment platform. 
 # Users deploy custom endpoints, so proxy not implemented here.
 # If you have a specific base URL, you can add it similarly.
 
 
-async def _proxy_request(provider: str, key_record: models.ApiKey, request: Request, db: Session, category: str = "llm"):
+def _proxy_request(provider: str, key_record: models.ApiKey, body: dict, db: Session, category: str = "llm"):
     _ensure_not_expired(key_record)
-
-    try:
-        body = await request.json()
-    except Exception:
-        raise HTTPException(400, "Invalid JSON body")
 
     api_key = security.decrypt_api_key(key_record.encrypted_key)
 
@@ -500,10 +515,10 @@ async def _proxy_request(provider: str, key_record: models.ApiKey, request: Requ
     return resp.json()
 
 @router.post("/{provider}/{name_slug}")
-async def proxy_request_named(
+def proxy_request_named(
     provider: str,
     name_slug: str,
-    request: Request,
+    body: dict = Body(...),
     db: Session = Depends(database.get_db),
     current_user: models.User = Depends(dependencies.get_current_user),
 ):
@@ -512,13 +527,13 @@ async def proxy_request_named(
     if not key_record:
         raise HTTPException(404, f"No {provider} key named {name_slug} found for user")
 
-    return await _proxy_request(provider, key_record, request, db, category="llm")
+    return _proxy_request(provider, key_record, body, db, category="llm")
 
 
 @router.post("/{provider}")
-async def proxy_request_default(
+def proxy_request_default(
     provider: str,
-    request: Request,
+    body: dict = Body(...),
     db: Session = Depends(database.get_db),
     current_user: models.User = Depends(dependencies.get_current_user),
 ):
@@ -532,14 +547,14 @@ async def proxy_request_default(
     if not key_record:
         raise HTTPException(404, f"No {provider} key found for user")
 
-    return await _proxy_request(provider, key_record, request, db, category="llm")
+    return _proxy_request(provider, key_record, body, db, category="llm")
 
 
 @router.post("/u/{provider}/{name_slug}")
-async def proxy_unified(
+def proxy_unified(
     provider: str,
     name_slug: str,
-    request: Request,
+    body: dict = Body(...),
     db: Session = Depends(database.get_db),
     x_api_key: str | None = Header(default=None, convert_underscores=False),
     authorization: str | None = Header(default=None),
@@ -561,15 +576,15 @@ async def proxy_unified(
     if not validate_platform_key(owner, provided_key):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid API key")
 
-    return await _proxy_request(provider, key_record, request, db, category="llm")
+    return _proxy_request(provider, key_record, body, db, category="llm")
 
 
 @router.post("/sdk/{category}/{provider}/{name_slug}")
-async def proxy_unified_category(
+def proxy_unified_category(
     category: str,
     provider: str,
     name_slug: str,
-    request: Request,
+    body: dict = Body(...),
     db: Session = Depends(database.get_db),
     x_api_key: str | None = Header(default=None, convert_underscores=False),
     authorization: str | None = Header(default=None),
@@ -594,14 +609,14 @@ async def proxy_unified_category(
     if not owner or not validate_platform_key(owner, provided_key):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid platform API key")
 
-    return await _proxy_request(provider, key_record, request, db, category=category)
+    return _proxy_request(provider, key_record, body, db, category=category)
 
 
 @router.post("/sdk/{category}/{provider}")
-async def proxy_unified_category_default(
+def proxy_unified_category_default(
     category: str,
     provider: str,
-    request: Request,
+    body: dict = Body(...),
     db: Session = Depends(database.get_db),
     x_api_key: str | None = Header(default=None, convert_underscores=False),
     authorization: str | None = Header(default=None),
@@ -629,4 +644,4 @@ async def proxy_unified_category_default(
             f"No API key configured for provider '{provider}'",
         )
 
-    return await _proxy_request(provider, key_record, request, db, category=category)
+    return _proxy_request(provider, key_record, body, db, category=category)
