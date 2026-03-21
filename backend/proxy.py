@@ -141,6 +141,16 @@ def _extract_provided_key(x_api_key: str | None, authorization: str | None) -> s
     return provided_key
 
 
+def _required(body: dict, key: str, operation: str):
+    value = body.get(key)
+    if value in (None, ""):
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            f"Missing required field '{key}' for operation '{operation}'",
+        )
+    return value
+
+
 CATEGORY_PROVIDER_CONFIG = {
     "vector_db": {
         "pinecone": {"base_url": "https://api.pinecone.io", "auth_header": "Api-Key"},
@@ -187,6 +197,467 @@ CATEGORY_PROVIDER_CONFIG = {
 }
 
 
+def _map_vector_db_operation(provider: str, operation: str, body: dict) -> dict:
+    if provider == "pinecone":
+        if operation == "upsert":
+            return {
+                "method": "POST",
+                "endpoint": "/vectors/upsert",
+                "json": {
+                    "vectors": _required(body, "vectors", operation),
+                    "namespace": body.get("namespace"),
+                },
+            }
+        if operation == "query":
+            return {
+                "method": "POST",
+                "endpoint": "/query",
+                "json": {
+                    "vector": _required(body, "query_vector", operation),
+                    "topK": body.get("top_k", 10),
+                    "namespace": body.get("namespace"),
+                    "filter": body.get("filter"),
+                    "includeValues": body.get("include_values", False),
+                    "includeMetadata": body.get("include_metadata", True),
+                },
+            }
+        if operation == "delete":
+            return {
+                "method": "POST",
+                "endpoint": "/vectors/delete",
+                "json": {
+                    "ids": body.get("ids"),
+                    "namespace": body.get("namespace"),
+                    "deleteAll": body.get("delete_all", False),
+                },
+            }
+        if operation == "create_index":
+            return {
+                "method": "POST",
+                "endpoint": "/indexes",
+                "json": {
+                    "name": _required(body, "index_name", operation),
+                    "dimension": _required(body, "dimension", operation),
+                    "metric": body.get("metric", "cosine"),
+                },
+            }
+        if operation == "list_indexes":
+            return {"method": "GET", "endpoint": "/indexes"}
+
+    if provider == "weaviate":
+        if operation == "upsert":
+            return {
+                "method": "POST",
+                "endpoint": "/v1/objects",
+                "json": body.get("object")
+                or {
+                    "class": _required(body, "class_name", operation),
+                    "id": body.get("id"),
+                    "properties": _required(body, "properties", operation),
+                    "vector": body.get("vector"),
+                },
+            }
+        if operation == "query":
+            return {
+                "method": "POST",
+                "endpoint": "/v1/graphql",
+                "json": {"query": _required(body, "query", operation)},
+            }
+        if operation == "delete":
+            class_name = _required(body, "class_name", operation)
+            object_id = _required(body, "id", operation)
+            return {
+                "method": "DELETE",
+                "endpoint": f"/v1/objects/{class_name}/{object_id}",
+            }
+        if operation == "create_class":
+            return {
+                "method": "POST",
+                "endpoint": "/v1/schema",
+                "json": body.get("schema")
+                or {
+                    "class": _required(body, "class_name", operation),
+                    "properties": body.get("properties", []),
+                },
+            }
+        if operation == "list_classes":
+            return {"method": "GET", "endpoint": "/v1/schema"}
+
+    if provider == "qdrant":
+        collection = _required(body, "collection", operation)
+        if operation == "upsert":
+            return {
+                "method": "PUT",
+                "endpoint": f"/collections/{collection}/points",
+                "json": {
+                    "points": _required(body, "points", operation),
+                    "wait": body.get("wait", True),
+                },
+            }
+        if operation == "query":
+            return {
+                "method": "POST",
+                "endpoint": f"/collections/{collection}/points/search",
+                "json": {
+                    "vector": _required(body, "query_vector", operation),
+                    "limit": body.get("top_k", 10),
+                    "filter": body.get("filter"),
+                    "with_payload": body.get("with_payload", True),
+                    "with_vector": body.get("with_vector", False),
+                },
+            }
+        if operation == "delete":
+            return {
+                "method": "POST",
+                "endpoint": f"/collections/{collection}/points/delete",
+                "json": {
+                    "points": body.get("ids")
+                    or {"filter": _required(body, "filter", operation)}
+                },
+            }
+        if operation == "create_collection":
+            return {
+                "method": "PUT",
+                "endpoint": f"/collections/{collection}",
+                "json": body.get("config")
+                or {
+                    "vectors": {
+                        "size": _required(body, "dimension", operation),
+                        "distance": body.get("distance", "Cosine"),
+                    }
+                },
+            }
+        if operation == "list_collections":
+            return {"method": "GET", "endpoint": "/collections"}
+
+    if provider == "milvus":
+        if operation == "upsert":
+            return {
+                "method": "POST",
+                "endpoint": "/v2/vectordb/entities/upsert",
+                "json": {
+                    "collectionName": _required(body, "collection", operation),
+                    "data": _required(body, "rows", operation),
+                },
+            }
+        if operation == "query":
+            return {
+                "method": "POST",
+                "endpoint": "/v2/vectordb/entities/search",
+                "json": {
+                    "collectionName": _required(body, "collection", operation),
+                    "data": [_required(body, "query_vector", operation)],
+                    "limit": body.get("top_k", 10),
+                    "filter": body.get("filter"),
+                },
+            }
+        if operation == "delete":
+            return {
+                "method": "POST",
+                "endpoint": "/v2/vectordb/entities/delete",
+                "json": {
+                    "collectionName": _required(body, "collection", operation),
+                    "id": body.get("ids") or _required(body, "id", operation),
+                },
+            }
+        if operation == "create_collection":
+            return {
+                "method": "POST",
+                "endpoint": "/v2/vectordb/collections/create",
+                "json": {
+                    "collectionName": _required(body, "collection", operation),
+                    "dimension": _required(body, "dimension", operation),
+                    "metricType": body.get("metric", "COSINE"),
+                },
+            }
+        if operation == "list_collections":
+            return {"method": "POST", "endpoint": "/v2/vectordb/collections/list", "json": {}}
+
+    if provider == "lancedb":
+        table = body.get("table") or body.get("collection")
+        if operation == "upsert":
+            return {
+                "method": "POST",
+                "endpoint": f"/v1/table/{_required({'table': table}, 'table', operation)}/upsert",
+                "json": {"data": _required(body, "rows", operation)},
+            }
+        if operation == "query":
+            return {
+                "method": "POST",
+                "endpoint": f"/v1/table/{_required({'table': table}, 'table', operation)}/query",
+                "json": {
+                    "vector": _required(body, "query_vector", operation),
+                    "limit": body.get("top_k", 10),
+                    "filter": body.get("filter"),
+                },
+            }
+        if operation == "delete":
+            return {
+                "method": "POST",
+                "endpoint": f"/v1/table/{_required({'table': table}, 'table', operation)}/delete",
+                "json": {"ids": body.get("ids"), "filter": body.get("filter")},
+            }
+        if operation == "create_table":
+            return {
+                "method": "POST",
+                "endpoint": "/v1/tables",
+                "json": {
+                    "name": _required(body, "table", operation),
+                    "schema": body.get("schema"),
+                },
+            }
+        if operation == "list_tables":
+            return {"method": "GET", "endpoint": "/v1/tables"}
+
+    raise HTTPException(
+        status.HTTP_400_BAD_REQUEST,
+        f"Unsupported vector_db operation '{operation}' for provider '{provider}'",
+    )
+
+
+def _map_devops_operation(provider: str, operation: str, body: dict) -> dict:
+    if provider == "github":
+        if operation == "list_repos":
+            return {"method": "GET", "endpoint": "/user/repos", "params": body.get("params")}
+        if operation == "get_repo":
+            return {
+                "method": "GET",
+                "endpoint": f"/repos/{_required(body, 'owner', operation)}/{_required(body, 'repo', operation)}",
+            }
+        if operation == "list_issues":
+            return {
+                "method": "GET",
+                "endpoint": f"/repos/{_required(body, 'owner', operation)}/{_required(body, 'repo', operation)}/issues",
+            }
+        if operation == "create_issue":
+            return {
+                "method": "POST",
+                "endpoint": f"/repos/{_required(body, 'owner', operation)}/{_required(body, 'repo', operation)}/issues",
+                "json": {
+                    "title": _required(body, "title", operation),
+                    "body": body.get("body", ""),
+                    "assignees": body.get("assignees", []),
+                    "labels": body.get("labels", []),
+                },
+            }
+
+    if provider == "gitlab":
+        project_id = body.get("project_id")
+        if operation == "list_projects":
+            return {"method": "GET", "endpoint": "/projects", "params": body.get("params")}
+        if operation == "get_project":
+            return {"method": "GET", "endpoint": f"/projects/{_required(body, 'project_id', operation)}"}
+        if operation == "list_merge_requests":
+            return {"method": "GET", "endpoint": f"/projects/{_required({'project_id': project_id}, 'project_id', operation)}/merge_requests"}
+        if operation == "create_merge_request":
+            return {
+                "method": "POST",
+                "endpoint": f"/projects/{_required({'project_id': project_id}, 'project_id', operation)}/merge_requests",
+                "json": {
+                    "source_branch": _required(body, "source_branch", operation),
+                    "target_branch": _required(body, "target_branch", operation),
+                    "title": _required(body, "title", operation),
+                    "description": body.get("description", ""),
+                },
+            }
+
+    if provider == "bitbucket":
+        workspace = _required(body, "workspace", operation)
+        if operation == "list_repos":
+            return {"method": "GET", "endpoint": f"/repositories/{workspace}"}
+        if operation == "get_repo":
+            return {
+                "method": "GET",
+                "endpoint": f"/repositories/{workspace}/{_required(body, 'repo_slug', operation)}",
+            }
+        if operation == "list_pull_requests":
+            return {
+                "method": "GET",
+                "endpoint": f"/repositories/{workspace}/{_required(body, 'repo_slug', operation)}/pullrequests",
+            }
+        if operation == "create_pull_request":
+            return {
+                "method": "POST",
+                "endpoint": f"/repositories/{workspace}/{_required(body, 'repo_slug', operation)}/pullrequests",
+                "json": _required(body, "payload", operation),
+            }
+
+    if provider == "vercel":
+        if operation == "list_projects":
+            return {"method": "GET", "endpoint": "/v9/projects"}
+        if operation == "get_project":
+            return {"method": "GET", "endpoint": f"/v9/projects/{_required(body, 'project_id', operation)}"}
+        if operation == "list_deployments":
+            return {"method": "GET", "endpoint": "/v6/deployments", "params": body.get("params")}
+        if operation == "create_deployment":
+            return {"method": "POST", "endpoint": "/v13/deployments", "json": _required(body, "payload", operation)}
+
+    if provider == "render":
+        if operation == "list_services":
+            return {"method": "GET", "endpoint": "/services"}
+        if operation == "get_service":
+            return {"method": "GET", "endpoint": f"/services/{_required(body, 'service_id', operation)}"}
+        if operation == "list_deploys":
+            return {"method": "GET", "endpoint": f"/services/{_required(body, 'service_id', operation)}/deploys"}
+        if operation == "trigger_deploy":
+            return {"method": "POST", "endpoint": f"/services/{_required(body, 'service_id', operation)}/deploys"}
+
+    if provider == "cloudflare":
+        if operation == "list_zones":
+            return {"method": "GET", "endpoint": "/zones"}
+        if operation == "get_zone":
+            return {"method": "GET", "endpoint": f"/zones/{_required(body, 'zone_id', operation)}"}
+        if operation == "list_dns_records":
+            return {"method": "GET", "endpoint": f"/zones/{_required(body, 'zone_id', operation)}/dns_records"}
+        if operation == "create_dns_record":
+            return {
+                "method": "POST",
+                "endpoint": f"/zones/{_required(body, 'zone_id', operation)}/dns_records",
+                "json": _required(body, "record", operation),
+            }
+
+    if provider == "railway":
+        if operation == "list_projects":
+            return {
+                "method": "POST",
+                "endpoint": "/",
+                "json": {"query": "query { projects { edges { node { id name } } } }"},
+            }
+        if operation == "project_details":
+            return {
+                "method": "POST",
+                "endpoint": "/",
+                "json": {
+                    "query": "query($projectId: String!) { project(id: $projectId) { id name services { edges { node { id name } } } } }",
+                    "variables": {"projectId": _required(body, "project_id", operation)},
+                },
+            }
+
+    raise HTTPException(
+        status.HTTP_400_BAD_REQUEST,
+        f"Unsupported devops operation '{operation}' for provider '{provider}'",
+    )
+
+
+def _map_api_operation(provider: str, operation: str, body: dict) -> dict:
+    if provider == "stripe":
+        if operation == "create_payment_intent":
+            return {"method": "POST", "endpoint": "/payment_intents", "data": _required(body, "payload", operation)}
+        if operation == "retrieve_payment_intent":
+            return {"method": "GET", "endpoint": f"/payment_intents/{_required(body, 'payment_intent_id', operation)}"}
+        if operation == "list_customers":
+            return {"method": "GET", "endpoint": "/customers"}
+        if operation == "create_customer":
+            return {"method": "POST", "endpoint": "/customers", "data": _required(body, "payload", operation)}
+
+    if provider == "twilio":
+        account_sid = _required(body, "account_sid", operation)
+        if operation == "send_sms":
+            return {
+                "method": "POST",
+                "endpoint": f"/Accounts/{account_sid}/Messages.json",
+                "basic_username": account_sid,
+                "data": {
+                    "To": _required(body, "to", operation),
+                    "From": _required(body, "from", operation),
+                    "Body": _required(body, "body", operation),
+                },
+            }
+        if operation == "list_messages":
+            return {
+                "method": "GET",
+                "endpoint": f"/Accounts/{account_sid}/Messages.json",
+                "basic_username": account_sid,
+            }
+
+    if provider == "sendgrid":
+        if operation == "send_email":
+            return {"method": "POST", "endpoint": "/mail/send", "json": _required(body, "payload", operation)}
+        if operation == "list_templates":
+            return {"method": "GET", "endpoint": "/templates"}
+
+    if provider == "slack":
+        if operation == "post_message":
+            return {
+                "method": "POST",
+                "endpoint": "/chat.postMessage",
+                "json": {
+                    "channel": _required(body, "channel", operation),
+                    "text": _required(body, "text", operation),
+                },
+            }
+        if operation == "list_channels":
+            return {"method": "GET", "endpoint": "/conversations.list"}
+
+    if provider == "notion":
+        if operation == "query_database":
+            return {
+                "method": "POST",
+                "endpoint": f"/databases/{_required(body, 'database_id', operation)}/query",
+                "json": body.get("payload", {}),
+            }
+        if operation == "create_page":
+            return {"method": "POST", "endpoint": "/pages", "json": _required(body, "payload", operation)}
+
+    if provider == "shopify":
+        if operation == "list_products":
+            return {"method": "GET", "endpoint": "/admin/api/2024-10/products.json"}
+        if operation == "create_product":
+            return {
+                "method": "POST",
+                "endpoint": "/admin/api/2024-10/products.json",
+                "json": _required(body, "payload", operation),
+            }
+        if operation == "list_orders":
+            return {"method": "GET", "endpoint": "/admin/api/2024-10/orders.json"}
+
+    if provider == "discord":
+        if operation == "create_message":
+            return {
+                "method": "POST",
+                "endpoint": f"/channels/{_required(body, 'channel_id', operation)}/messages",
+                "json": {"content": _required(body, "content", operation)},
+            }
+        if operation == "get_channel":
+            return {"method": "GET", "endpoint": f"/channels/{_required(body, 'channel_id', operation)}"}
+
+    raise HTTPException(
+        status.HTTP_400_BAD_REQUEST,
+        f"Unsupported apis operation '{operation}' for provider '{provider}'",
+    )
+
+
+def _apply_operation_mapping(category: str, provider: str, body: dict) -> dict:
+    # If caller already provided explicit endpoint/path, preserve passthrough behavior.
+    if body.get("endpoint") or body.get("path"):
+        return body
+
+    operation = str(body.get("operation", "")).strip().lower()
+    if not operation:
+        return body
+
+    if category == "vector_db":
+        mapped = _map_vector_db_operation(provider, operation, body)
+    elif category == "devops":
+        mapped = _map_devops_operation(provider, operation, body)
+    elif category == "apis":
+        mapped = _map_api_operation(provider, operation, body)
+    else:
+        return body
+
+    # Preserve caller-provided tuning knobs and headers.
+    if body.get("headers") and not mapped.get("headers"):
+        mapped["headers"] = body["headers"]
+    if body.get("timeout") and not mapped.get("timeout"):
+        mapped["timeout"] = body["timeout"]
+    if body.get("base_url") and not mapped.get("base_url"):
+        mapped["base_url"] = body["base_url"]
+    if body.get("basic_username") and not mapped.get("basic_username"):
+        mapped["basic_username"] = body["basic_username"]
+
+    return mapped
+
+
 def _safe_target_url(base_url: str | None, endpoint: str | None) -> str:
     if endpoint and endpoint.startswith("https://"):
         return endpoint
@@ -203,15 +674,19 @@ def _run_category_passthrough(category: str, provider: str, api_key: str, body: 
     if not cfg:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Proxy not configured for {category}/{provider}")
 
+    body = _apply_operation_mapping(category, provider, body)
+
     method = str(body.get("method", "POST")).upper()
     endpoint = body.get("endpoint") or body.get("path")
-    url = _safe_target_url(cfg.get("base_url"), endpoint)
+    url = _safe_target_url(body.get("base_url") or cfg.get("base_url"), endpoint)
 
     headers = dict(body.get("headers", {}))
     auth_mode = cfg.get("auth_mode", "header")
     auth_header = cfg.get("auth_header", "Authorization")
     if auth_mode == "basic":
-        token = base64.b64encode(api_key.encode()).decode()
+        basic_username = body.get("basic_username")
+        basic_secret = f"{basic_username}:{api_key}" if basic_username else api_key
+        token = base64.b64encode(basic_secret.encode()).decode()
         headers["Authorization"] = f"Basic {token}"
     elif cfg.get("bearer", False):
         headers[auth_header] = f"Bearer {api_key}"
@@ -226,7 +701,17 @@ def _run_category_passthrough(category: str, provider: str, api_key: str, body: 
     if json_payload is None and data_payload is None:
         json_payload = {
             k: v for k, v in body.items()
-            if k not in {"method", "endpoint", "path", "headers", "params", "timeout"}
+            if k not in {
+                "method",
+                "endpoint",
+                "path",
+                "headers",
+                "params",
+                "timeout",
+                "operation",
+                "base_url",
+                "basic_username",
+            }
         }
 
     return _HTTP.request(
