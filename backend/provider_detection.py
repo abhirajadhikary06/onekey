@@ -21,7 +21,6 @@ PROVIDER_PREFIX_MAP = {
     "xoxa-": "slack",
     "SG.": "sendgrid",
     "sk-ant-": "anthropic",
-    "claude-": "anthropic",
     "sk-proj-": "openai",
     "sk-svcacct-": "openai",
     "sk-": "openai",

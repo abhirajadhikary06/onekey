@@ -47,7 +47,6 @@ PROVIDER_CATEGORY_MAP = {
     "supabase": "database",
     "mongodb": "database",
     "planetscale": "database",
-    "chroma": "vector_db",
     "dagster": "data_engineering",
     "prefect": "data_engineering",
     "astronomer": "data_engineering",
@@ -130,7 +129,6 @@ CATEGORY_PROVIDER_CONFIG = {
         "weaviate": {"base_url": None, "auth_header": "Authorization", "bearer": True},
         "qdrant": {"base_url": "https://api.cloud.qdrant.io", "auth_header": "api-key"},
         "milvus": {"base_url": None, "auth_header": "Authorization", "bearer": True},
-        "chroma": {"base_url": "https://api.trychroma.com", "auth_header": "Authorization", "bearer": True},
         "lancedb": {"base_url": None, "auth_header": "Authorization", "bearer": True},
     },
     "database": {
