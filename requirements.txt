@@ -12,3 +12,8 @@ argon2-cffi
 python_multipart
 psycopg2
 dotenv
+# RAG dependencies
+langchain>=0.3.0
+langchain-groq>=0.2.0
+langchain-community>=0.3.0
+langchain-classic>=0.0.1

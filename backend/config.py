@@ -29,3 +29,6 @@ BITBUCKET_CLIENT_ID = os.getenv("BITBUCKET_CLIENT_ID")
 BITBUCKET_CLIENT_SECRET = os.getenv("BITBUCKET_CLIENT_SECRET")
 BITBUCKET_REDIRECT_URI = os.getenv("BITBUCKET_REDIRECT_URI", "https://Onekey.onrender.com/auth/bitbucket/callback")
 
+# Groq API Key for RAG Chatbot
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+
