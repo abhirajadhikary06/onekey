@@ -45,8 +45,11 @@ Question: {question}
 SQL query used: {query}
 SQL result: {result}
 
-Based on the above, write a clear, concise, friendly answer in plain English.
-If the result is empty or an error, say "I couldn't find that information right now."
+Instructions:
+1. Write a very short, crisp, and direct answer to the user's question using ONLY the provided SQL result.
+2. Do NOT add conversational filler (e.g., "I'd be happy to help", "Here is a summary").
+3. Do NOT mention SQL, queries, or the database. Just give the final answer.
+4. If the SQL result is empty, completely blank, or an error, return EXACTLY the following string and nothing else: "I couldn't find that information right now."
 """
 )
 
@@ -72,8 +75,49 @@ def _build_chain():
         temperature=0,
     )
 
+    # We need a strict prompt so Llama doesn't output markdown formatting
+    # which breaks the SQLAlchemy execution.
+    sql_prompt = PromptTemplate.from_template(
+        """You are a PostgreSQL expert. Given an input question, first create a syntactically correct PostgreSQL query to run.
+Unless the user specifies a specific number of examples to obtain, query for at most 5 results using the LIMIT clause.
+Never query for all columns from a table. You must query only the columns that are needed to answer the question.
+Pay attention to use only the column names you can see in the schema description. Be careful to not query for columns that do not exist.
+Pay attention to which column is in which table.
+
+Only use the following tables:
+{table_info}
+
+IMPORTANT: Return ONLY the raw SQL query. Do NOT wrap it in ```sql ... ``` markdown blocks.
+Do NOT include any explanations or conversational text before or after the query. Just the SQL string.
+
+Question: {question}"""
+    )
+
     # Step 1: NL → SQL
-    sql_chain = create_sql_query_chain(llm, db)
+    def get_schema(_):
+        return db.get_table_info()
+        
+    def strip_markdown(text: str) -> str:
+        text = text.strip()
+        # Find the first SELECT, WITH, INSERT, UPDATE, DELETE etc.
+        # Fallback to simple removal if that fails.
+        if "```sql" in text:
+            text = text.split("```sql")[1]
+        elif "```" in text:
+            text = text.split("```")[1]
+            
+        if "```" in text:
+            text = text.split("```")[0]
+            
+        return text.strip()
+
+    sql_chain = (
+        RunnablePassthrough.assign(table_info=get_schema)
+        | sql_prompt
+        | llm
+        | StrOutputParser()
+        | strip_markdown
+    )
 
     # Step 2: Execute the generated SQL
     execute_query = QuerySQLDataBaseTool(db=db)
