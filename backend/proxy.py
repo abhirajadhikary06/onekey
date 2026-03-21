@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from . import database, dependencies, models, security
-from .platform_key import validate_platform_key
+from .platform_key import get_user_for_platform_key, validate_platform_key
 
 router = APIRouter(prefix="/proxy", tags=["proxy"])
 
@@ -66,6 +66,22 @@ def _find_key_by_name(db: Session, provider: str, name_slug: str, user_id: int |
     if user_id:
         q = q.filter(models.ApiKey.user_id == user_id)
     return q.first()
+
+
+def _find_latest_key_for_user_provider(db: Session, user_id: int, provider: str):
+    return (
+        db.query(models.ApiKey)
+        .filter(models.ApiKey.user_id == user_id, models.ApiKey.api_provider == provider)
+        .order_by(models.ApiKey.created_at.desc())
+        .first()
+    )
+
+
+def _extract_provided_key(x_api_key: str | None, authorization: str | None) -> str | None:
+    provided_key = x_api_key
+    if not provided_key and authorization and authorization.lower().startswith("bearer "):
+        provided_key = authorization.split(" ", 1)[1]
+    return provided_key
 
 
 def _run_openai(api_key: str, body: dict):
@@ -438,9 +454,7 @@ async def proxy_unified(
     if not key_record:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Unified key not found")
 
-    provided_key = x_api_key
-    if not provided_key and authorization and authorization.lower().startswith("bearer "):
-        provided_key = authorization.split(" ", 1)[1]
+    provided_key = _extract_provided_key(x_api_key, authorization)
 
     if not provided_key:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Missing API key")
@@ -449,9 +463,7 @@ async def proxy_unified(
     if not owner:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "User for API key not found")
 
-    is_valid_platform = validate_platform_key(owner, provided_key)
-    is_valid_legacy = security.decrypt_api_key(key_record.unified_key_encrypted) == provided_key
-    if not (is_valid_platform or is_valid_legacy):
+    if not validate_platform_key(owner, provided_key):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid API key")
 
     return await _proxy_request(provider, key_record, request, db)
@@ -478,9 +490,7 @@ async def proxy_unified_category(
             f"Provider '{provider}' does not belong to category '{category}'",
         )
 
-    provided_key = x_api_key
-    if not provided_key and authorization and authorization.lower().startswith("bearer "):
-        provided_key = authorization.split(" ", 1)[1]
+    provided_key = _extract_provided_key(x_api_key, authorization)
 
     if not provided_key:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Missing API key")
@@ -488,5 +498,40 @@ async def proxy_unified_category(
     owner = db.query(models.User).filter(models.User.id == key_record.user_id).first()
     if not owner or not validate_platform_key(owner, provided_key):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid platform API key")
+
+    return await _proxy_request(provider, key_record, request, db)
+
+
+@router.post("/sdk/{category}/{provider}")
+async def proxy_unified_category_default(
+    category: str,
+    provider: str,
+    request: Request,
+    db: Session = Depends(database.get_db),
+    x_api_key: str | None = Header(default=None, convert_underscores=False),
+    authorization: str | None = Header(default=None),
+):
+    provider = provider.lower()
+
+    if not _provider_in_category(provider, category):
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            f"Provider '{provider}' does not belong to category '{category}'",
+        )
+
+    provided_key = _extract_provided_key(x_api_key, authorization)
+    if not provided_key:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Missing API key")
+
+    owner = get_user_for_platform_key(db, provided_key)
+    if not owner:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid platform API key")
+
+    key_record = _find_latest_key_for_user_provider(db, owner.id, provider)
+    if not key_record:
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND,
+            f"No API key configured for provider '{provider}'",
+        )
 
     return await _proxy_request(provider, key_record, request, db)

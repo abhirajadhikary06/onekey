@@ -10,5 +10,5 @@ class CategoryClient:
         self.client = client
         self.category = category
 
-    def call(self, provider: str, key_slug: str, payload: dict[str, Any]) -> dict[str, Any]:
-        return self.client.invoke(self.category, provider, key_slug, payload)
+    def call(self, provider: str, payload: dict[str, Any]) -> dict[str, Any]:
+        return self.client.invoke(self.category, provider, payload)

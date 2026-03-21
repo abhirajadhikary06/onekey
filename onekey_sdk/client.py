@@ -18,15 +18,8 @@ class OnekeyClient:
             "Content-Type": "application/json",
         }
 
-    def invoke(self, category: str, provider: str, key_slug: str, payload: dict[str, Any]) -> dict[str, Any]:
-        url = f"{self.base_url.rstrip('/')}/proxy/sdk/{category}/{provider}/{key_slug}"
-        resp = requests.post(url, headers=self._headers(), json=payload, timeout=self.timeout)
-        resp.raise_for_status()
-        return resp.json()
-
-    def invoke_legacy(self, provider: str, key_slug: str, payload: dict[str, Any]) -> dict[str, Any]:
-        # Backward-compatible endpoint for existing deployments.
-        url = f"{self.base_url.rstrip('/')}/proxy/u/{provider}/{key_slug}"
+    def invoke(self, category: str, provider: str, payload: dict[str, Any]) -> dict[str, Any]:
+        url = f"{self.base_url.rstrip('/')}/proxy/sdk/{category}/{provider}"
         resp = requests.post(url, headers=self._headers(), json=payload, timeout=self.timeout)
         resp.raise_for_status()
         return resp.json()

@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "onekey-sdk"
+name = "onekey"
 version = "0.1.0"
 description = "Unified API key platform SDK with category-based integrations"
 readme = "README.md"
@@ -17,8 +17,8 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/anikchand461/Onekey"
-Repository = "https://github.com/anikchand461/Onekey"
+Homepage = "https://github.com/anikchand461/onekey"
+Repository = "https://github.com/anikchand461/onekey"
 
 [tool.setuptools.packages.find]
 where = ["."]

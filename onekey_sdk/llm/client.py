@@ -9,7 +9,7 @@ class LLMClient:
     def __init__(self, client: OnekeyClient):
         self.client = client
 
-    def chat(self, provider: str, key_slug: str, model: str, messages: list[dict[str, str]], **kwargs: Any) -> dict[str, Any]:
+    def chat(self, provider: str, model: str, messages: list[dict[str, str]], **kwargs: Any) -> dict[str, Any]:
         payload: dict[str, Any] = {"model": model, "messages": messages}
         payload.update(kwargs)
-        return self.client.invoke("llm", provider, key_slug, payload)
+        return self.client.invoke("llm", provider, payload)

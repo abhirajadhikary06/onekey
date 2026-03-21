@@ -9,3 +9,6 @@ instance/
 *.log
 .DS_Store
 /backend/__init__.py
+onekey.egg-info/
+dist/
+build/

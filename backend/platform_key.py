@@ -26,3 +26,21 @@ def validate_platform_key(user: models.User, provided_key: str) -> bool:
     if not user.platform_unified_key_encrypted:
         return False
     return security.decrypt_api_key(user.platform_unified_key_encrypted) == provided_key
+
+
+def get_user_for_platform_key(db: Session, provided_key: str) -> models.User | None:
+    # Keys are generated as okp-<user_id>-<random>, so we can resolve owner directly.
+    parts = provided_key.split("-", 2)
+    if len(parts) < 3 or parts[0] != "okp":
+        return None
+
+    try:
+        user_id = int(parts[1])
+    except ValueError:
+        return None
+
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        return None
+
+    return user if validate_platform_key(user, provided_key) else None
