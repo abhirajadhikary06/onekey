@@ -137,6 +137,8 @@
         transition: all 0.2s;
         color: #000000;
         border-bottom: 3px solid #000000;
+        display: flex;
+        align-items: center;
       }
 
       .dropdown-item:last-child {
@@ -378,6 +380,112 @@
         color: #000000;
       }
 
+      /* ── Unified API Key Block ── */
+      .shared-key-block {
+        background: #fff7cf;
+        padding: 1.75rem 2rem;
+        border-radius: 16px;
+        border: 4px solid #000000;
+        box-shadow: 8px 8px 0px #000000;
+        margin-bottom: 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1.5rem;
+        flex-wrap: wrap;
+      }
+
+      .shared-key-left {
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+        min-width: 0;
+        flex: 1;
+      }
+
+      .shared-key-label {
+        font-size: 0.78rem;
+        font-weight: 800;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: #6b7280;
+      }
+
+      .shared-key-title {
+        font-size: 1.2rem;
+        font-weight: 800;
+        color: #000000;
+      }
+
+      .shared-key-code-wrap {
+        margin-top: 0.6rem;
+        background: #ffffff;
+        border: 3px solid #000000;
+        border-radius: 10px;
+        padding: 0.75rem 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        overflow: hidden;
+      }
+
+      .shared-key-code-wrap code {
+        font-family: "SF Mono", "Fira Code", monospace;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #111827;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        flex: 1;
+      }
+
+      .shared-key-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-shrink: 0;
+      }
+
+      .copy-shared-key-btn {
+        padding: 0.75rem 1.5rem;
+        font-size: 0.95rem;
+        font-weight: 700;
+        background: #000000;
+        color: #ffffff;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+        box-shadow: 4px 4px 0px #666666;
+        white-space: nowrap;
+      }
+
+      .copy-shared-key-btn:hover {
+        transform: translate(2px, 2px);
+        box-shadow: 2px 2px 0px #666666;
+      }
+
+      .copy-shared-key-btn:active {
+        transform: translate(4px, 4px);
+        box-shadow: 0px 0px 0px #666666;
+      }
+
+      .copy-shared-key-btn.copied {
+        background: #16a34a;
+        box-shadow: 4px 4px 0px #14532d;
+      }
+
+      .copy-shared-key-btn.copied:hover {
+        box-shadow: 2px 2px 0px #14532d;
+      }
+
+      #sharedKeyStatus {
+        font-size: 0.88rem;
+        font-weight: 700;
+        margin-top: 0.4rem;
+      }
+
       @media (max-width: 900px) {
         .grid-2 {
           grid-template-columns: 1fr;
@@ -394,6 +502,15 @@
 
         h1 {
           font-size: 2rem;
+        }
+
+        .shared-key-block {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .shared-key-actions {
+          justify-content: flex-start;
         }
       }
 
@@ -458,11 +575,7 @@
           </div>
           <div class="form-group">
             <label>API Key</label>
-            <input
-              type="text"
-              id="apiKey"
-              placeholder="sk-... or your key here"
-            />
+            <input type="text" id="apiKey" placeholder="sk-... or your key here" />
           </div>
           <div class="form-group">
             <label>Expiration (optional)</label>
@@ -480,6 +593,23 @@
         </div>
       </div>
 
+      <!-- Unified API Key Block -->
+      <div class="shared-key-block">
+        <div class="shared-key-left">
+          <span class="shared-key-label">Your platform key</span>
+          <span class="shared-key-title">Unified API Key</span>
+          <div class="shared-key-code-wrap">
+            <code id="platformApiKeyValue">Loading...</code>
+          </div>
+          <p id="sharedKeyStatus"></p>
+        </div>
+        <div class="shared-key-actions">
+          <button class="copy-shared-key-btn" id="copyBtn" onclick="copyUnifiedApiKey()">
+            Copy Key
+          </button>
+        </div>
+      </div>
+
       <!-- Section 2: Your Stored Keys (Full Width) -->
       <div class="section">
         <h2>Your Stored Keys</h2>
@@ -491,7 +621,6 @@
                 <th>Provider</th>
                 <th>Visible API Key</th>
                 <th>Unified Endpoint</th>
-                <th>Unified API Key</th>
                 <th>Expires</th>
                 <th>Created</th>
                 <th>Actions</th>
@@ -533,10 +662,8 @@
         window.location.href = "/static/index.html";
       }
       
-      // If token came from URL, save it to localStorage
       if (urlToken) {
         localStorage.setItem("access_token", urlToken);
-        // Clean URL (remove token from URL bar)
         window.history.replaceState({}, document.title, "/static/dashboard.html");
       }
 
@@ -545,27 +672,15 @@
         "Content-Type": "application/json",
       };
 
-      // Logout
       function logout() {
         localStorage.removeItem("access_token");
         window.location.href = "/static/index.html";
       }
 
-      function goProfile() {
-        window.location.href = "/static/profile.html";
-      }
-
-      function goCLI() {
-        window.location.href = "/static/pip-package.html";
-      }
-
-      function goDocs() {
-        window.location.href = "/static/docs/groq.html";
-      }
-
-      function goIntegrations() {
-        window.location.href = "/static/integrations.html";
-      }
+      function goProfile()      { window.location.href = "/static/profile.html"; }
+      function goCLI()          { window.location.href = "/static/pip-package.html"; }
+      function goDocs()         { window.location.href = "/static/docs/groq.html"; }
+      function goIntegrations() { window.location.href = "/static/integrations.html"; }
 
       function goUpgrade() {
         if (confirm("Upgrade to premium to add unlimited API keys? (This will be charged to your account)")) {
@@ -573,41 +688,80 @@
         }
       }
 
-      // Upgrade account to premium
+      async function loadUnifiedApiKey() {
+        const keyCode = document.getElementById("platformApiKeyValue");
+        const status  = document.getElementById("sharedKeyStatus");
+        keyCode.textContent = "Loading...";
+        status.textContent  = "";
+
+        try {
+          const res = await fetch("/keys/platform-key", { headers });
+          if (!res.ok) throw new Error(await res.text());
+          const payload = await res.json();
+          keyCode.textContent = payload.platform_api_key || "Unavailable";
+        } catch (err) {
+          keyCode.textContent  = "Unavailable";
+          status.className     = "error";
+          status.textContent   = "Error loading unified API key: " + err.message;
+        }
+      }
+
+      async function copyUnifiedApiKey() {
+        const key    = document.getElementById("platformApiKeyValue").textContent || "";
+        const status = document.getElementById("sharedKeyStatus");
+        const btn    = document.getElementById("copyBtn");
+
+        if (!key || key === "Loading..." || key === "Unavailable") {
+          status.className   = "error";
+          status.textContent = "Unified API key is not available yet.";
+          return;
+        }
+
+        try {
+          await navigator.clipboard.writeText(key);
+          btn.textContent  = "✓ Copied!";
+          btn.classList.add("copied");
+          status.className   = "success";
+          status.textContent = "Unified API key copied to clipboard.";
+          setTimeout(() => {
+            btn.textContent = "Copy Key";
+            btn.classList.remove("copied");
+            status.textContent = "";
+          }, 2500);
+        } catch (err) {
+          status.className   = "error";
+          status.textContent = "Could not copy: " + err.message;
+        }
+      }
+
       async function upgradeAccount() {
         try {
-          const res = await fetch("/keys/upgrade", {
-            method: "POST",
-            headers,
-          });
-
+          const res = await fetch("/keys/upgrade", { method: "POST", headers });
           if (!res.ok) {
             const err = await res.json();
             throw new Error(err.detail || "Upgrade failed");
           }
-
           alert("✓ Successfully upgraded to premium! You can now add unlimited API keys.");
-          loadKeyStatus(); // Refresh status
+          loadKeyStatus();
         } catch (err) {
           alert("Error: " + err.message);
         }
       }
 
-      // Add new key
       async function addKey() {
-        const name = document.getElementById("keyName").value.trim();
-        const apiKey = document.getElementById("apiKey").value.trim();
+        const name       = document.getElementById("keyName").value.trim();
+        const apiKey     = document.getElementById("apiKey").value.trim();
         const expiresRaw = document.getElementById("expiresAt").value;
-        const status = document.getElementById("addStatus");
+        const status     = document.getElementById("addStatus");
 
         if (!name || !apiKey) {
-          status.className = "error";
+          status.className   = "error";
           status.textContent = "Name and API Key are required";
           return;
         }
 
         status.textContent = "Auto-detecting provider and adding key...";
-        status.className = "";
+        status.className   = "";
 
         const expires_at = expiresRaw ? new Date(expiresRaw).toISOString() : null;
 
@@ -617,129 +771,111 @@
             headers,
             body: JSON.stringify({ name, key: apiKey, expires_at }),
           });
-
           if (!res.ok) {
             const err = await res.json();
             throw new Error(err.detail || "Failed to add key");
           }
-
-          status.className = "success";
+          status.className   = "success";
           status.textContent = "✓ Key added successfully!";
-          document.getElementById("keyName").value = "";
-          document.getElementById("apiKey").value = "";
-          document.getElementById("expiresAt").value = "";
-          loadKeys(); // Refresh list
-          loadKeyStatus(); // Refresh key count
+          document.getElementById("keyName").value    = "";
+          document.getElementById("apiKey").value     = "";
+          document.getElementById("expiresAt").value  = "";
+          loadKeys();
+          loadKeyStatus();
         } catch (err) {
-          status.className = "error";
+          status.className   = "error";
           status.textContent = "Error: " + err.message;
         }
       }
 
       function formatExpiry(expires_at) {
         if (!expires_at) return "Never";
-        const d = new Date(expires_at);
-        return d.toLocaleDateString();
+        return new Date(expires_at).toLocaleDateString();
       }
 
-      // Load list of keys
       async function loadKeys() {
-        const tbody = document.querySelector("#keysTable tbody");
+        const tbody  = document.querySelector("#keysTable tbody");
         const status = document.getElementById("keysStatus");
-        tbody.innerHTML = "";
+        tbody.innerHTML    = "";
         status.textContent = "Loading keys...";
 
         try {
           const res = await fetch("/keys", { headers });
           if (!res.ok) throw new Error(await res.text());
-
           const keys = await res.json();
-          if (keys.length === 0) {
-            status.textContent = "No keys stored yet.";
-            return;
-          }
+
+          if (keys.length === 0) { status.textContent = "No keys stored yet."; return; }
 
           status.textContent = "";
           keys.forEach((k) => {
             const tr = document.createElement("tr");
             tr.innerHTML = `
-            <td>${k.name}</td>
-            <td>${k.provider}</td>
-            <td><code>${k.api_key}</code></td>
-            <td><code>${k.unified_endpoint}</code></td>
-            <td><code>${k.unified_api_key}</code></td>
-            <td>${formatExpiry(k.expires_at)}</td>
-            <td>${new Date(k.created_at).toLocaleString()}</td>
-            <td>
-              <button onclick="viewUsage(${k.id}, '${k.name.replace(/'/g, "\\'")}')">Usage</button>
-              <button onclick="deleteKey(${k.id})">Delete</button>
-            </td>
-          `;
+              <td>${k.name}</td>
+              <td>${k.provider}</td>
+              <td><code>${k.api_key}</code></td>
+              <td><code>${k.unified_endpoint}</code></td>
+              <td>${formatExpiry(k.expires_at)}</td>
+              <td>${new Date(k.created_at).toLocaleString()}</td>
+              <td>
+                <button onclick="viewUsage(${k.id}, '${k.name.replace(/'/g, "\\'")}')">Usage</button>
+                <button onclick="deleteKey(${k.id})">Delete</button>
+              </td>
+            `;
             tbody.appendChild(tr);
           });
         } catch (err) {
-          status.className = "error";
+          status.className   = "error";
           status.textContent = "Error loading keys: " + err.message;
         }
       }
 
-      // Delete key
       async function deleteKey(id) {
         if (!confirm("Delete this key?")) return;
-
         try {
-          const res = await fetch(`/keys/${id}`, {
-            method: "DELETE",
-            headers,
-          });
+          const res = await fetch(`/keys/${id}`, { method: "DELETE", headers });
           if (!res.ok) throw new Error(await res.text());
-          loadKeys(); // Refresh list
-          loadKeyStatus(); // Refresh key count
+          loadKeys();
+          loadKeyStatus();
         } catch (err) {
           alert("Delete failed: " + err.message);
         }
       }
 
       function viewUsage(id, name) {
-        window.location.href = `/static/key-usage.html?keyId=${id}&name=${encodeURIComponent(
-          name
-        )}`;
+        window.location.href = `/static/key-usage.html?keyId=${id}&name=${encodeURIComponent(name)}`;
       }
 
-      // Load subscription and key count status
       async function loadKeyStatus() {
         try {
           const res = await fetch("/keys/status", { headers });
           if (!res.ok) throw new Error(await res.text());
-
           const status = await res.json();
-          
-          // Update the key count display
+
           document.getElementById("keyCount").textContent = status.key_count;
-          document.getElementById("maxKeys").textContent = status.max_keys || "∞";
-          
-          // Update button states and messages
-          const addKeyBtn = document.getElementById("addKeyBtn");
+          document.getElementById("maxKeys").textContent  = status.max_keys || "∞";
+
+          const addKeyBtn  = document.getElementById("addKeyBtn");
           const upgradeBtn = document.getElementById("upgradeBtn");
-          const addStatus = document.getElementById("addStatus");
-          
+          const addStatus  = document.getElementById("addStatus");
+
           if (!status.is_subscribed && !status.can_add_more) {
-            addKeyBtn.disabled = true;
+            addKeyBtn.disabled       = true;
             upgradeBtn.style.display = "block";
-            addStatus.className = "error";
-            addStatus.textContent = "❌ Limit reached! Delete keys or upgrade to add more.";
+            addStatus.className      = "error";
+            addStatus.textContent    = "❌ Limit reached! Delete keys or upgrade to add more.";
           } else if (!status.is_subscribed && status.max_keys - status.key_count === 1) {
-            addStatus.className = "error";
+            addStatus.className   = "error";
             addStatus.textContent = "⚠️ You can add 1 more free key before limit.";
           } else {
-            addKeyBtn.disabled = false;
+            addKeyBtn.disabled       = false;
             upgradeBtn.style.display = "none";
-            addStatus.textContent = "";
+            addStatus.textContent    = "";
           }
         } catch (err) {
           console.error("Error loading key status:", err.message);
         }
       }
+
       async function loadUsage() {
         const status = document.getElementById("usageStatus");
         status.textContent = "Loading usage...";
@@ -747,11 +883,10 @@
         try {
           const res = await fetch("/usage", { headers });
           if (!res.ok) throw new Error(await res.text());
-
           const logs = await res.json();
+
           status.textContent = logs.length ? "" : "No usage data yet.";
 
-          // Simple chart: total tokens per provider
           const providers = {};
           logs.forEach((log) => {
             if (!providers[log.provider]) providers[log.provider] = 0;
@@ -763,39 +898,27 @@
             type: "bar",
             data: {
               labels: Object.keys(providers),
-              datasets: [
-                {
-                  data: Object.values(providers),
-                  backgroundColor: [
-                    "#111827",
-                    "#1f2937",
-                    "#374151",
-                    "#4b5563",
-                    "#6b7280",
-                  ],
-                },
-              ],
+              datasets: [{
+                data: Object.values(providers),
+                backgroundColor: ["#111827","#1f2937","#374151","#4b5563","#6b7280"],
+              }],
             },
             options: {
               responsive: true,
               maintainAspectRatio: true,
-              plugins: {
-                legend: {
-                  display: false,
-                },
-              },
+              plugins: { legend: { display: false } },
               scales: { y: { beginAtZero: true } },
             },
           });
         } catch (err) {
-          status.className = "error";
+          status.className   = "error";
           status.textContent = "Error loading usage: " + err.message;
         }
       }
 
-      // Load everything on page load
       window.addEventListener("load", () => {
-        loadKeyStatus(); // Load key status first
+        loadKeyStatus();
+        loadUnifiedApiKey();
         loadKeys();
         loadUsage();
       });
