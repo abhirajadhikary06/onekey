@@ -332,6 +332,89 @@
         box-shadow: 2px 2px 0px #666666;
       }
 
+      .requestly-btn {
+        background: #0f766e;
+        box-shadow: 3px 3px 0px #115e59;
+      }
+
+      .requestly-btn:hover {
+        box-shadow: 2px 2px 0px #115e59;
+      }
+
+      .requestly-modal {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.45);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+        z-index: 2000;
+      }
+
+      .requestly-modal-card {
+        width: min(1000px, 100%);
+        max-height: 90vh;
+        overflow: auto;
+        background: #ffffff;
+        border: 4px solid #000000;
+        border-radius: 16px;
+        box-shadow: 8px 8px 0px #000000;
+        padding: 1.25rem;
+      }
+
+      .requestly-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1rem;
+      }
+
+      .requestly-header h3 {
+        margin: 0;
+        font-size: 1.15rem;
+      }
+
+      .requestly-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+      }
+
+      .requestly-block {
+        border: 3px solid #000000;
+        border-radius: 10px;
+        background: #f9fafb;
+        padding: 0.75rem;
+      }
+
+      .requestly-block h4 {
+        margin: 0 0 0.5rem;
+        font-size: 0.95rem;
+      }
+
+      .requestly-pre {
+        margin: 0;
+        white-space: pre-wrap;
+        word-break: break-word;
+        font-size: 0.82rem;
+        line-height: 1.4;
+      }
+
+      .requestly-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-top: 0.75rem;
+      }
+
+      @media (max-width: 900px) {
+        .requestly-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
       /* Key Limit Info */
       .key-limit-info {
         background: #f3f4f6;
@@ -672,6 +755,8 @@
         "Content-Type": "application/json",
       };
 
+      let platformApiKey = "";
+
       function logout() {
         localStorage.removeItem("access_token");
         window.location.href = "/static/index.html";
@@ -698,11 +783,131 @@
           const res = await fetch("/keys/platform-key", { headers });
           if (!res.ok) throw new Error(await res.text());
           const payload = await res.json();
-          keyCode.textContent = payload.platform_api_key || "Unavailable";
+          platformApiKey = payload.platform_api_key || "";
+          keyCode.textContent = platformApiKey || "Unavailable";
         } catch (err) {
+          platformApiKey = "";
           keyCode.textContent  = "Unavailable";
           status.className     = "error";
           status.textContent   = "Error loading unified API key: " + err.message;
+        }
+      }
+
+      function escapeHtml(value) {
+        return String(value)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#39;");
+      }
+
+      async function runRequestPreview(config) {
+        const resp = await fetch(config.endpoint, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${config.platform_api_key}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(config.payload),
+        });
+
+        const text = await resp.text();
+        let parsed = text;
+        try {
+          parsed = JSON.stringify(JSON.parse(text), null, 2);
+        } catch (e) {
+          // Keep plain text body when response is not JSON.
+        }
+
+        return {
+          ok: resp.ok,
+          status: resp.status,
+          body: parsed,
+        };
+      }
+
+      function closeRequestlyModal() {
+        const modal = document.getElementById("requestlyModal");
+        if (modal) modal.remove();
+      }
+
+      async function copyText(text) {
+        try {
+          await navigator.clipboard.writeText(text);
+          alert("Copied");
+        } catch (err) {
+          alert("Copy failed: " + err.message);
+        }
+      }
+
+      function openRequestlyModal(config, preview, keyName) {
+        closeRequestlyModal();
+        const modal = document.createElement("div");
+        modal.id = "requestlyModal";
+        modal.className = "requestly-modal";
+        modal.innerHTML = `
+          <div class="requestly-modal-card">
+            <div class="requestly-header">
+              <h3>Requestly Test: ${escapeHtml(keyName)} (${escapeHtml(config.provider)})</h3>
+              <button onclick="closeRequestlyModal()">Close</button>
+            </div>
+            <div class="requestly-grid">
+              <div class="requestly-block">
+                <h4>Python SDK</h4>
+                <pre class="requestly-pre">${escapeHtml(config.python_sdk)}</pre>
+                <div class="requestly-actions">
+                  <button onclick="copyText(${JSON.stringify(config.python_sdk)})">Copy SDK</button>
+                </div>
+              </div>
+              <div class="requestly-block">
+                <h4>cURL</h4>
+                <pre class="requestly-pre">${escapeHtml(config.curl)}</pre>
+                <div class="requestly-actions">
+                  <button onclick="copyText(${JSON.stringify(config.curl)})">Copy cURL</button>
+                </div>
+              </div>
+              <div class="requestly-block">
+                <h4>Request Payload</h4>
+                <pre class="requestly-pre">${escapeHtml(JSON.stringify(config.payload, null, 2))}</pre>
+              </div>
+              <div class="requestly-block">
+                <h4>Live Output (${preview.status})</h4>
+                <pre class="requestly-pre">${escapeHtml(preview.body)}</pre>
+                <div class="requestly-actions">
+                  <button onclick="copyText(${JSON.stringify(preview.body)})">Copy Output</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+        modal.addEventListener("click", (e) => {
+          if (e.target.id === "requestlyModal") closeRequestlyModal();
+        });
+        document.body.appendChild(modal);
+      }
+
+      async function testWithRequestly(provider, keyName) {
+        const requestlyTab = window.open("about:blank", "_blank");
+
+        try {
+          const cfgRes = await fetch("/keys/requestly-config", {
+            method: "POST",
+            headers,
+            body: JSON.stringify({ provider }),
+          });
+          if (!cfgRes.ok) throw new Error(await cfgRes.text());
+          const config = await cfgRes.json();
+
+          if (requestlyTab) {
+            requestlyTab.location.href = config.requestly_url || "https://requestly.com/";
+          }
+
+          const preview = await runRequestPreview(config);
+          openRequestlyModal(config, preview, keyName);
+        } catch (err) {
+          if (requestlyTab) requestlyTab.close();
+          alert("Requestly test failed: " + err.message);
         }
       }
 
@@ -818,6 +1023,7 @@
               <td>${new Date(k.created_at).toLocaleString()}</td>
               <td>
                 <button onclick="viewUsage(${k.id}, '${k.name.replace(/'/g, "\\'")}')">Usage</button>
+                <button class="requestly-btn" onclick="testWithRequestly('${k.provider}', '${k.name.replace(/'/g, "\\'")}')">Requestly</button>
                 <button onclick="deleteKey(${k.id})">Delete</button>
               </td>
             `;
