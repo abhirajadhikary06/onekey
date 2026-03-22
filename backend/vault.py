@@ -276,6 +276,12 @@ def _is_failed_status(value: str) -> bool:
     }
 
 
+def _build_upgrade_return_url() -> str:
+    base_url = config.DODO_RETURN_URL or "https://onekey-ciwz.onrender.com/static/dashboard.html"
+    separator = "&" if "?" in base_url else "?"
+    return f"{base_url}{separator}upgrade=1"
+
+
 @router.post("/", response_model=schemas.ApiKeyOut, status_code=status.HTTP_201_CREATED)
 def add_key(
     key_in: ApiKeyCreate,
@@ -476,7 +482,7 @@ def upgrade_to_premium(
                     "quantity": quantity,
                 }
             ],
-            return_url=config.DODO_RETURN_URL,
+            return_url=_build_upgrade_return_url(),
         )
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Failed to create Dodo checkout session: {exc}") from exc

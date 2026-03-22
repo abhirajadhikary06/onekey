@@ -970,6 +970,9 @@
             throw new Error("Invalid checkout response from server");
           }
 
+          // Persist session locally so returning checkout page can auto-verify premium.
+          localStorage.setItem("onekey_pending_upgrade_session_id", payload.session_id);
+
           const checkoutTab = window.open(payload.checkout_url, "_blank");
           if (!checkoutTab) {
             window.location.href = payload.checkout_url;
@@ -980,11 +983,13 @@
           const result = await waitForUpgradeCompletion(payload.session_id, 90, 4000);
 
           if (result.status === "paid" || result.is_subscribed) {
+            localStorage.removeItem("onekey_pending_upgrade_session_id");
             addStatus.className = "success";
             addStatus.textContent = "✓ Payment verified. Premium is now active.";
             alert("✓ Payment successful. Premium unlocked.");
             loadKeyStatus();
           } else if (result.status === "failed") {
+            localStorage.removeItem("onekey_pending_upgrade_session_id");
             addStatus.className = "error";
             addStatus.textContent = `Payment was not completed (${result.checkout_status || result.status}).`;
             alert("Payment failed or cancelled. Please try again.");
@@ -1021,6 +1026,41 @@
         }
 
         return { status: "pending", is_subscribed: false };
+      }
+
+      async function refreshPremiumAfterReturn() {
+        const pendingSessionId = localStorage.getItem("onekey_pending_upgrade_session_id");
+        if (!pendingSessionId) return;
+
+        const addStatus = document.getElementById("addStatus");
+        addStatus.className = "";
+        addStatus.textContent = "Verifying payment status...";
+
+        try {
+          const result = await waitForUpgradeCompletion(pendingSessionId, 20, 3000);
+
+          if (result.status === "paid" || result.is_subscribed) {
+            localStorage.removeItem("onekey_pending_upgrade_session_id");
+            addStatus.className = "success";
+            addStatus.textContent = "✓ Premium is active. Key limit updated.";
+            await loadKeyStatus();
+            return;
+          }
+
+          if (result.status === "failed") {
+            localStorage.removeItem("onekey_pending_upgrade_session_id");
+            addStatus.className = "error";
+            addStatus.textContent = "Payment was not completed.";
+            return;
+          }
+
+          // Still pending, keep session id to check on next refresh.
+          addStatus.className = "";
+          addStatus.textContent = "Payment still pending. Complete checkout and refresh this page.";
+        } catch (err) {
+          addStatus.className = "error";
+          addStatus.textContent = "Could not verify payment status right now.";
+        }
       }
 
       async function addKey() {
@@ -1192,11 +1232,12 @@
         }
       }
 
-      window.addEventListener("load", () => {
-        loadKeyStatus();
+      window.addEventListener("load", async () => {
+        await loadKeyStatus();
         loadUnifiedApiKey();
         loadKeys();
         loadUsage();
+        refreshPremiumAfterReturn();
       });
     </script>
     <script src="/static/chatbot.js"></script>
