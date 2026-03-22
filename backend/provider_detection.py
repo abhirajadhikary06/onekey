@@ -42,7 +42,8 @@ PROVIDER_PREFIX_MAP = {
     "pplx-": "perplexity",
     "sk-": "deepseek",
     "sk-sp-": "qwen",
-    "neon_": "neondb",
+    # "neondb_": "neondb",
+    "napi_": "neondb",
     "sbp_": "supabase",
     "pscale_tkn_": "planetscale",
     "ps_": "planetscale",
@@ -65,7 +66,7 @@ PROVIDER_PREFIX_MAP = {
     "ghp_": "github",
     "glft_": "gitlab",
     "bbat_": "bitbucket",
-    "v2_": "vercel",
+    "v1": "vercel",
     "rnd_": "render",
     "cfpat_": "cloudflare",
     "railway_": "railway",
@@ -120,9 +121,14 @@ def detect_provider(api_key: str) -> str:
             return provider
     
     # If no match found
+    all_prefixes = list(PROVIDER_PREFIX_MAP.keys())
+    example_prefixes_list = []
+    for i in range(min(5, len(all_prefixes))):
+        example_prefixes_list.append(all_prefixes[i])
+    example_prefixes = ", ".join(example_prefixes_list)
     raise ValueError(
         f"Could not detect provider from API key. "
-        f"Key should start with a known prefix like: {', '.join(list(PROVIDER_PREFIX_MAP.keys())[:5])}... "
+        f"Key should start with a known prefix like: {example_prefixes}... "
         f"For providers that do not expose stable key prefixes, pass provider explicitly."
     )
 

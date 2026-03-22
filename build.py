@@ -23,7 +23,7 @@ def build_for_platform():
         "--clean",
         "--noconfirm",
         *opts,
-        "cli.py"
+        "onekey/cli.py"
     ]
     subprocess.run(cmd, check=True)
 

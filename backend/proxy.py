@@ -1,10 +1,8 @@
 import time
 import asyncio
 import base64
+import httpx
 from datetime import datetime, timezone
-import requests
-from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, status, BackgroundTasks, Body
 from sqlalchemy.orm import Session
 from backend.mailer import send_api_alert_email
@@ -16,30 +14,17 @@ from .integrations import (
     map_api_operation,
     map_devops_operation,
     map_vector_db_operation,
+    map_database_operation,
 )
 from .platform_key import get_user_for_platform_key, validate_platform_key
 
 router = APIRouter(prefix="/proxy", tags=["proxy"])
 
-# Reuse outbound connections to reduce DNS/TCP/TLS handshake overhead.
-_HTTP = requests.Session()
-_ADAPTER = HTTPAdapter(
-    pool_connections=128,
-    pool_maxsize=128,
-    max_retries=Retry(total=0, connect=0, read=0, redirect=0),
+# Reuse outbound connections for async.
+_HTTP_ASYNC = httpx.AsyncClient(
+    timeout=httpx.Timeout(90.0, connect=10.0),
+    limits=httpx.Limits(max_connections=128, max_keepalive_connections=128)
 )
-_HTTP.mount("https://", _ADAPTER)
-_HTTP.mount("http://", _ADAPTER)
-
-
-def _http_post(url: str, *, headers: dict | None = None, json: dict | None = None, timeout: int = 60):
-    return _HTTP.post(url, headers=headers, json=json, timeout=timeout)
-
-
-def _http_get(url: str, *, headers: dict | None = None, timeout: int = 60):
-    return _HTTP.get(url, headers=headers, timeout=timeout)
-
-
 PROVIDER_ALIASES = {}
 
 
@@ -127,11 +112,13 @@ def _apply_operation_mapping(category: str, provider: str, body: dict) -> dict:
         return body
 
     if category == "vector_db":
-        mapped = _map_vector_db_operation(provider, operation, body)
+        mapped = map_vector_db_operation(provider, operation, body)
+    elif category == "database":
+        mapped = map_database_operation(provider, operation, body)
     elif category == "devops":
-        mapped = _map_devops_operation(provider, operation, body)
+        mapped = map_devops_operation(provider, operation, body)
     elif category == "apis":
-        mapped = _map_api_operation(provider, operation, body)
+        mapped = map_api_operation(provider, operation, body)
     else:
         return body
 
@@ -159,8 +146,31 @@ def _safe_target_url(base_url: str | None, endpoint: str | None) -> str:
     return f"{base_url.rstrip('/')}/{endpoint.lstrip('/')}"
 
 
-def _run_category_passthrough(category: str, provider: str, api_key: str, body: dict):
-    cfg = CATEGORY_PROVIDER_CONFIG.get(category, {}).get(provider)
+def _clean_api_key(provider: str, key: str) -> str:
+    """Heuristic to fix common copy-paste errors for specific providers."""
+    if not isinstance(key, str):
+        key = str(key)
+    key = key.strip()
+    if provider == "vercel":
+        if "vcp_" in key:
+            start = key.find("vcp_")
+            if start != -1:
+                # Extract until end of string and split by any trailing garbage
+                v_key = key[start:]
+                return v_key.split(":")[0].split()[0]
+    return key
+
+
+async def _run_category_passthrough(
+    category: str,
+    provider: str,
+    api_key: str,
+    body: dict,
+) -> httpx.Response:
+    # Clean the API key before use
+    api_key = _clean_api_key(provider, api_key)
+
+    cfg = CATEGORY_PROVIDER_CONFIG.get(category, {}).get(provider, {})
     if not cfg:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Proxy not configured for {category}/{provider}")
 
@@ -204,7 +214,11 @@ def _run_category_passthrough(category: str, provider: str, api_key: str, body: 
             }
         }
 
-    return _HTTP.request(
+    # Don't send empty JSON body for GET requests
+    if method == "GET" and not json_payload:
+        json_payload = None
+
+    r = await _HTTP_ASYNC.request(
         method=method,
         url=url,
         headers=headers,
@@ -213,167 +227,168 @@ def _run_category_passthrough(category: str, provider: str, api_key: str, body: 
         data=data_payload,
         timeout=timeout,
     )
+    return r
 
 
-def _run_openai(api_key: str, body: dict):
+async def _run_openai(api_key: str, body: dict):
     url = "https://api.openai.com/v1/chat/completions"
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-    return _http_post(url, headers=headers, json=body)
+    return await _HTTP_ASYNC.post(url, headers=headers, json=body)
 
 
-def _run_groq(api_key: str, body: dict):
+async def _run_groq(api_key: str, body: dict):
     url = "https://api.groq.com/openai/v1/chat/completions"
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-    return _http_post(url, headers=headers, json=body)
+    return await _HTTP_ASYNC.post(url, headers=headers, json=body)
 
 
-def _run_anthropic(api_key: str, body: dict):
+async def _run_anthropic(api_key: str, body: dict):
     url = "https://api.anthropic.com/v1/messages"
     headers = {
         "x-api-key": api_key,
         "anthropic-version": "2023-06-01",
         "Content-Type": "application/json",
     }
-    return _http_post(url, headers=headers, json=body)
+    return await _HTTP_ASYNC.post(url, headers=headers, json=body)
 
 
-def _run_gemini(api_key: str, body: dict):
+async def _run_gemini(api_key: str, body: dict):
     # Gemini uses a different format - model in URL
     model = body.get("model", "gemini-2.5-flash")
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
-    return _http_post(url, json=body)
+    return await _HTTP_ASYNC.post(url, json=body)
 
 
-def _run_openrouter(api_key: str, body: dict):
+async def _run_openrouter(api_key: str, body: dict):
     url = "https://openrouter.ai/api/v1/chat/completions"
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-    return _http_post(url, headers=headers, json=body)
+    return await _HTTP_ASYNC.post(url, headers=headers, json=body)
 
 
-def _run_mistral(api_key: str, body: dict):
+async def _run_mistral(api_key: str, body: dict):
     url = "https://api.mistral.ai/v1/chat/completions"
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-    return _http_post(url, headers=headers, json=body)
+    return await _HTTP_ASYNC.post(url, headers=headers, json=body)
 
 
-def _run_together(api_key: str, body: dict):
+async def _run_together(api_key: str, body: dict):
     url = "https://api.together.xyz/v1/chat/completions"
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-    return _http_post(url, headers=headers, json=body)
+    return await _HTTP_ASYNC.post(url, headers=headers, json=body)
 
 
-def _run_fireworks(api_key: str, body: dict):
+async def _run_fireworks(api_key: str, body: dict):
     url = "https://api.fireworks.ai/inference/v1/chat/completions"
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-    return _http_post(url, headers=headers, json=body)
+    return await _HTTP_ASYNC.post(url, headers=headers, json=body)
 
 
-def _run_anyscale(api_key: str, body: dict):
+async def _run_anyscale(api_key: str, body: dict):
     url = "https://api.endpoints.anyscale.com/v1/chat/completions"
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-    return _http_post(url, headers=headers, json=body)
+    return await _HTTP_ASYNC.post(url, headers=headers, json=body)
 
 
-def _run_deepinfra(api_key: str, body: dict):
+async def _run_deepinfra(api_key: str, body: dict):
     url = "https://api.deepinfra.com/v1/openai/chat/completions"
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-    return _http_post(url, headers=headers, json=body)
+    return await _HTTP_ASYNC.post(url, headers=headers, json=body)
 
 
-def _run_nebius(api_key: str, body: dict):
+async def _run_nebius(api_key: str, body: dict):
     url = "https://api.ai.nebius.cloud/v1/chat/completions"
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-    return _http_post(url, headers=headers, json=body)
+    return await _HTTP_ASYNC.post(url, headers=headers, json=body)
 
 
-def _run_cohere(api_key: str, body: dict):
+async def _run_cohere(api_key: str, body: dict):
     url = "https://api.cohere.com/v1/chat"
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-    return _http_post(url, headers=headers, json=body)
+    return await _HTTP_ASYNC.post(url, headers=headers, json=body)
 
 
-def _run_ai21(api_key: str, body: dict):
+async def _run_ai21(api_key: str, body: dict):
     url = "https://api.ai21.com/studio/v1/chat/completions"
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-    return _http_post(url, headers=headers, json=body)
+    return await _HTTP_ASYNC.post(url, headers=headers, json=body)
 
 
-def _run_perplexity(api_key: str, body: dict):
+async def _run_perplexity(api_key: str, body: dict):
     url = "https://api.perplexity.ai/chat/completions"
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-    return _http_post(url, headers=headers, json=body)
+    return await _HTTP_ASYNC.post(url, headers=headers, json=body)
 
 
-def _run_deepseek(api_key: str, body: dict):
+async def _run_deepseek(api_key: str, body: dict):
     url = "https://api.deepseek.com/v1/chat/completions"
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-    return _http_post(url, headers=headers, json=body)
+    return await _HTTP_ASYNC.post(url, headers=headers, json=body)
 
 
-def _run_qwen(api_key: str, body: dict):
+async def _run_qwen(api_key: str, body: dict):
     url = "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-    return _http_post(url, headers=headers, json=body)
+    return await _HTTP_ASYNC.post(url, headers=headers, json=body)
 
 
-def _run_grok(api_key: str, body: dict):
+async def _run_grok(api_key: str, body: dict):
     url = "https://api.x.ai/v1/chat/completions"
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-    return _http_post(url, headers=headers, json=body)
+    return await _HTTP_ASYNC.post(url, headers=headers, json=body)
 
 
-def _run_replicate(api_key: str, body: dict):
+async def _run_replicate(api_key: str, body: dict):
     create_url = "https://api.replicate.com/v1/predictions"
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-    create_resp = _http_post(create_url, headers=headers, json=body)
+    create_resp = await _HTTP_ASYNC.post(create_url, headers=headers, json=body)
     if create_resp.status_code >= 400:
         return create_resp
     prediction = create_resp.json()
@@ -383,33 +398,32 @@ def _run_replicate(api_key: str, body: dict):
     
     while True:
         get_url = f"https://api.replicate.com/v1/predictions/{prediction_id}"
-        get_resp = _http_get(get_url, headers=headers)
+        get_resp = await _HTTP_ASYNC.get(get_url, headers=headers)
         if get_resp.status_code >= 400:
             return get_resp
         data = get_resp.json()
         status = data.get("status")
         if status in ["succeeded", "failed", "canceled"]:
-            # Return the get_resp as the final response
             return get_resp
-        time.sleep(1)
+        await asyncio.sleep(1)
 
 
-def _run_baseten(api_key: str, body: dict):
+async def _run_baseten(api_key: str, body: dict):
     url = "https://inference.baseten.co/v1/chat/completions"
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-    return _http_post(url, headers=headers, json=body)
+    return await _HTTP_ASYNC.post(url, headers=headers, json=body)
 
 
-def _run_huggingface(api_key: str, body: dict):
+async def _run_huggingface(api_key: str, body: dict):
     url = "https://api.huggingface.co/v1/chat/completions"
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-    return _http_post(url, headers=headers, json=body)
+    return await _HTTP_ASYNC.post(url, headers=headers, json=body)
 
 # Note: For "modal", no fixed API endpoint as it's a deployment platform. 
 # Users deploy custom endpoints, so proxy not implemented here.
@@ -422,51 +436,56 @@ async def _proxy_request(provider: str, key_record: models.ApiKey, request: Requ
     api_key = security.decrypt_api_key(key_record.encrypted_key)
 
     start_time = time.time()
+    try:
+        body = await request.json()
+    except:
+        body = {}
+
     if category == "llm":
         if provider == "openai":
-            resp = _run_openai(api_key, body)
+            resp = await _run_openai(api_key, body)
         elif provider == "groq":
-            resp = _run_groq(api_key, body)
+            resp = await _run_groq(api_key, body)
         elif provider == "anthropic":
-            resp = _run_anthropic(api_key, body)
+            resp = await _run_anthropic(api_key, body)
         elif provider == "gemini":
-            resp = _run_gemini(api_key, body)
+            resp = await _run_gemini(api_key, body)
         elif provider == "openrouter":
-            resp = _run_openrouter(api_key, body)
+            resp = await _run_openrouter(api_key, body)
         elif provider == "mistral":
-            resp = _run_mistral(api_key, body)
+            resp = await _run_mistral(api_key, body)
         elif provider == "together":
-            resp = _run_together(api_key, body)
+            resp = await _run_together(api_key, body)
         elif provider == "fireworks":
-            resp = _run_fireworks(api_key, body)
+            resp = await _run_fireworks(api_key, body)
         elif provider == "anyscale":
-            resp = _run_anyscale(api_key, body)
+            resp = await _run_anyscale(api_key, body)
         elif provider == "deepinfra":
-            resp = _run_deepinfra(api_key, body)
+            resp = await _run_deepinfra(api_key, body)
         elif provider == "nebius":
-            resp = _run_nebius(api_key, body)
+            resp = await _run_nebius(api_key, body)
         elif provider == "cohere":
-            resp = _run_cohere(api_key, body)
+            resp = await _run_cohere(api_key, body)
         elif provider == "ai21":
-            resp = _run_ai21(api_key, body)
+            resp = await _run_ai21(api_key, body)
         elif provider == "perplexity":
-            resp = _run_perplexity(api_key, body)
+            resp = await _run_perplexity(api_key, body)
         elif provider == "deepseek":
-            resp = _run_deepseek(api_key, body)
+            resp = await _run_deepseek(api_key, body)
         elif provider == "qwen":
-            resp = _run_qwen(api_key, body)
+            resp = await _run_qwen(api_key, body)
         elif provider == "grok":
-            resp = _run_grok(api_key, body)
+            resp = await _run_grok(api_key, body)
         elif provider == "replicate":
-            resp = _run_replicate(api_key, body)
+            resp = await _run_replicate(api_key, body)
         elif provider == "baseten":
-            resp = _run_baseten(api_key, body)
+            resp = await _run_baseten(api_key, body)
         elif provider == "huggingface":
-            resp = _run_huggingface(api_key, body)
+            resp = await _run_huggingface(api_key, body)
         else:
             raise HTTPException(400, f"Proxy not implemented for {provider}")
     else:
-        resp = _run_category_passthrough(category, provider, api_key, body)
+        resp = await _run_category_passthrough(category, provider, api_key, body)
 
     latency = int((time.time() - start_time) * 1000)
 
@@ -477,7 +496,7 @@ async def _proxy_request(provider: str, key_record: models.ApiKey, request: Requ
         endpoint_or_model=body.get("model") or body.get("endpoint") or body.get("path") or "unknown",
         status_code=resp.status_code,
         latency_ms=latency,
-        total_tokens=resp.json().get("usage", {}).get("total_tokens", 0) if resp.ok else 0,
+        total_tokens=resp.json().get("usage", {}).get("total_tokens", 0) if resp.is_success and isinstance(resp.json(), dict) else 0,
     )
     db.add(usage_log)
     db.commit()

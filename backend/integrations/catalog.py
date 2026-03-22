@@ -51,6 +51,8 @@ PROVIDER_CATEGORY_MAP = {
     "meltano": "data_engineering",
     "railway": "devops",
     "discord": "apis",
+    "postgres": "database",
+    "snowflake": "database",
 }
 
 
@@ -63,12 +65,14 @@ CATEGORY_PROVIDER_CONFIG = {
         "lancedb": {"base_url": None, "auth_header": "Authorization", "bearer": True},
     },
     "database": {
-        "neondb": {"base_url": None, "auth_header": "Authorization", "bearer": True},
+        "neondb": {"base_url": "https://console.neon.tech/api/v2", "auth_header": "Authorization", "bearer": True},
         "xata": {"base_url": "https://api.xata.io", "auth_header": "Authorization", "bearer": True},
         "supabase": {"base_url": "https://api.supabase.com/v1", "auth_header": "apikey"},
         "mongodb": {"base_url": None, "auth_header": "api-key"},
         "planetscale": {"base_url": "https://api.planetscale.com/v1", "auth_header": "Authorization", "bearer": True},
         "cockroachdb": {"base_url": "https://cockroachlabs.cloud/api/v1", "auth_header": "Authorization", "bearer": True},
+        "postgres": {"base_url": None, "auth_header": "Authorization", "bearer": True},
+        "snowflake": {"base_url": None, "auth_header": "Authorization", "bearer": True},
     },
     "data_engineering": {
         "airbyte": {"base_url": "https://api.airbyte.com/v1", "auth_header": "Authorization", "bearer": True},

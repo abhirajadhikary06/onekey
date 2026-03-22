@@ -1,0 +1,477 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" href="static/images/favicon.ico" />
+  <title>Documentation - Onekey</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #ffffff;
+      color: #111827;
+      line-height: 1.6;
+      padding: 2rem;
+      padding-top: 8rem;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    /* Floating Navbar (Same as Dashboard) */
+    .navbar {
+      position: fixed;
+      top: 2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      width: calc(100% - 4rem);
+      max-width: 1200px;
+      background: #ffffff;
+      border: 4px solid #000000;
+      border-radius: 16px;
+      box-shadow: 6px 6px 0px #000000;
+      padding: 1rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 1000;
+    }
+
+    .navbar-logo {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .navbar-logo img {
+      width: 48px;
+      height: 48px;
+      object-fit: contain;
+    }
+
+    .navbar-logo span {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #000000;
+    }
+
+    .hamburger {
+      width: 48px;
+      height: 48px;
+      background: #000000;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      transition: all 0.2s;
+      box-shadow: 3px 3px 0px #666666;
+    }
+
+    .hamburger span {
+      width: 24px;
+      height: 3px;
+      background: #ffffff;
+      border-radius: 2px;
+    }
+
+    /* Documentation Styles */
+    .section {
+      background: #ffffff;
+      padding: 2rem;
+      border-radius: 16px;
+      border: 4px solid #000000;
+      box-shadow: 8px 8px 0px #000000;
+      margin-bottom: 3rem;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      font-weight: 800;
+      margin-bottom: 2rem;
+    }
+
+    h2 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      margin-bottom: 1.5rem;
+      border-bottom: 4px solid #000;
+      display: inline-block;
+    }
+
+    h3 {
+      font-size: 1.3rem;
+      font-weight: 700;
+      margin: 1.5rem 0 1rem;
+      color: #000;
+    }
+
+    p {
+      margin-bottom: 1rem;
+      font-size: 1.05rem;
+    }
+
+    code {
+      font-family: "Monaco", "Menlo", "Courier New", monospace;
+      background: #f3f4f6;
+      padding: 0.2rem 0.4rem;
+      border-radius: 4px;
+      border: 1px solid #000;
+      font-weight: 600;
+      color: #000;
+    }
+
+    pre {
+      background: #0f172a;
+      color: #f8fafc;
+      padding: 1.5rem;
+      border-radius: 12px;
+      border: 4px solid #000;
+      box-shadow: 6px 6px 0px #000;
+      overflow-x: auto;
+      margin-bottom: 2rem;
+      font-family: "Monaco", "Menlo", "Courier New", monospace;
+      font-size: 0.95rem;
+    }
+
+    pre code {
+      background: transparent !important;
+      border: none !important;
+      padding: 0 !important;
+      color: inherit !important;
+      font-weight: normal !important;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 2rem;
+    }
+
+    th,
+    td {
+      padding: 1rem;
+      text-align: left;
+      border: 3px solid #000;
+    }
+
+    th {
+      background: #f3f4f6;
+      font-weight: 800;
+    }
+
+    .tag {
+      display: inline-block;
+      padding: 0.3rem 0.8rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      background: #000;
+      color: #fff;
+      margin-right: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .highlight {
+      color: #38bdf8;
+    }
+
+    .comment {
+      color: #94a3b8;
+    }
+
+    .string {
+      color: #34d399;
+    }
+
+    /* Dropdown Menu Styles */
+    .navbar-right {
+      position: relative;
+    }
+
+    .hamburger.active span:nth-child(1) {
+      transform: rotate(45deg) translate(6px, 6px);
+    }
+
+    .hamburger.active span:nth-child(2) {
+      opacity: 0;
+    }
+
+    .hamburger.active span:nth-child(3) {
+      transform: rotate(-45deg) translate(6px, -6px);
+    }
+
+    .dropdown-menu {
+      position: absolute;
+      top: calc(100% + 1rem);
+      right: 0;
+      background: #ffffff;
+      border: 4px solid #000000;
+      border-radius: 12px;
+      box-shadow: 6px 6px 0px #000000;
+      min-width: 220px;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-10px);
+      transition: all 0.3s;
+      z-index: 1100;
+    }
+
+    .dropdown-menu.active {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+
+    .dropdown-item {
+      padding: 1rem 1.25rem;
+      border: none;
+      background: #ffffff;
+      width: 100%;
+      text-align: left;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      color: #000000;
+      border-bottom: 3px solid #000000;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .dropdown-item:last-child {
+      border-bottom: none;
+      border-radius: 0 0 8px 8px;
+    }
+
+    .dropdown-item:first-child {
+      border-radius: 8px 8px 0 0;
+    }
+
+    .dropdown-item:hover {
+      background: #f3f4f6;
+    }
+
+    .dropdown-icon {
+      width: 20px;
+      height: 20px;
+      object-fit: contain;
+    }
+
+    .dropdown-item.logout {
+      color: #dc2626;
+    }
+
+    @media (max-width: 768px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .navbar {
+        width: calc(100% - 2rem);
+      }
+
+      h1 {
+        font-size: 2.2rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <nav class="navbar">
+    <div class="navbar-logo" onclick="goDashboard()" style="cursor: pointer;">
+      <img src="static/images/logo.png" alt="Onekey Logo" />
+      <span>Onekey</span>
+    </div>
+    <div class="navbar-right">
+      <button class="hamburger" id="hamburger" onclick="toggleMenu()">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+      <div class="dropdown-menu" id="dropdownMenu">
+        <button class="dropdown-item" onclick="goDashboard()">
+          <img class="dropdown-icon" src="static/images/dashboard.png" alt="Dashboard" />
+          Dashboard
+        </button>
+        <button class="dropdown-item" onclick="goProfile()">
+          <img class="dropdown-icon" src="static/images/profile.png" alt="Profile" />
+          Profile
+        </button>
+        <button class="dropdown-item" onclick="goIntegrations()">
+          <img class="dropdown-icon" src="static/images/integrations.png" alt="Integrations" />
+          Integrations
+        </button>
+        <button class="dropdown-item" onclick="goCLI()">
+          <img class="dropdown-icon" src="static/images/pypylogo.png" alt="PIP Package" />
+          PIP Package
+        </button>
+        <button class="dropdown-item logout" onclick="logout()">
+          <img class="dropdown-icon" src="static/images/logout.png" alt="Logout" />
+          Logout
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <h1>SDK Documentation</h1>
+
+    <div class="section">
+      <h2>Quick Start</h2>
+      <p>Install the Onekey SDK and CLI to manage all your API keys with a single platform key.</p>
+      <pre><code><span class="comment"># Install via pip</span>
+pip install onekey</code></pre>
+      <p>Initialize your client in Python:</p>
+      <pre><code><span class="highlight">from</span> onekey <span class="highlight">import</span> OnekeyClient
+
+<span class="comment"># Automatically picks up ONEKEY_PLATFORM_API_KEY from .env</span>
+client = OnekeyClient()</code></pre>
+    </div>
+
+    <div class="section">
+      <h2>LLM Integrations</h2>
+      <p>Power 20+ LLM providers with a single unified interface.</p>
+      <pre><code><span class="comment"># Chat with any model (OpenAI, Anthropic, Groq, etc.)</span>
+response = client.llm.chat(
+    provider=<span class="string">"groq"</span>,
+    model=<span class="string">"llama3-70b-8192"</span>,
+    messages=[{<span class="string">"role"</span>: <span class="string">"user"</span>, <span class="string">"content"</span>: <span class="string">"Hello!"</span>}]
+)</code></pre>
+      <table>
+        <thead>
+          <tr>
+            <th>Region</th>
+            <th>Providers</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Standard</td>
+            <td>OpenAI, Claude, Groq, Gemini</td>
+          </tr>
+          <tr>
+            <td>Advanced</td>
+            <td>Mistral, OpenRouter, DeepSeek, Together</td>
+          </tr>
+          <tr>
+            <td>Specialized</td>
+            <td>Perplexity, AI21, Cohere, Replicate</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section">
+      <h2>Infrastructure & DevOps</h2>
+      <p>Full control over your cloud resources via Onekey Proxy.</p>
+
+      <h3>DevOps (GitHub, Vercel, Render)</h3>
+      <pre><code><span class="comment"># GitHub Operations</span>
+repos = client.devops.list_repos(<span class="string">"github"</span>)
+
+<span class="comment"># Vercel Operations</span>
+projects = client.devops.list_projects(<span class="string">"vercel"</span>)
+
+<span class="comment"># Render Operations</span>
+services = client.devops.list_services(<span class="string">"render"</span>)</code></pre>
+
+      <h3>Databases (Vector & Cloud)</h3>
+      <pre><code><span class="comment"># Vector Database</span>
+indexes = client.vector_db.list_indexes(<span class="string">"pinecone"</span>)
+
+<span class="comment"># Cloud Database</span>
+db_projects = client.database.list_projects(<span class="string">"neondb"</span>)</code></pre>
+    </div>
+
+    <div class="section">
+      <h2>General Purpose APIs</h2>
+      <p>Access popular SaaS APIs using a single platform key.</p>
+      <pre><code><span class="comment"># Universal API Passthrough</span>
+response = client.apis.call(
+    provider=<span class="string">"stripe"</span>,
+    operation=<span class="string">"list_customers"</span>
+)
+
+<span class="comment"># Supported: Stripe, Twilio, SendGrid, Slack, Notion, Shopify, Discord</span></code></pre>
+    </div>
+
+    <div class="section">
+      <h2>Direct API Proxy</h2>
+      <p>Use any language or tool (curl, Postman) to call the proxy via REST.</p>
+      <pre><code><span class="comment"># Generic request format</span>
+POST /proxy/sdk/{category}/{provider}
+Authorization: Bearer <span class="string">&lt;YOUR_PLATFORM_KEY&gt;</span>
+Content-Type: application/json
+
+{
+  <span class="string">"operation"</span>: <span class="string">"list_repos"</span>,
+  <span class="string">"params"</span>: {}
+}</code></pre>
+    </div>
+  </div>
+
+  <script>
+    function toggleMenu() {
+      const hamburger = document.getElementById('hamburger');
+      const dropdown = document.getElementById('dropdownMenu');
+      hamburger.classList.toggle('active');
+      dropdown.classList.toggle('active');
+    }
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function (event) {
+      const navbar = document.querySelector('.navbar-right');
+      if (!navbar.contains(event.target)) {
+        document.getElementById('hamburger')?.classList.remove('active');
+        document.getElementById('dropdownMenu')?.classList.remove('active');
+      }
+    });
+
+    function goDashboard() {
+      window.location.href = "/static/dashboard.html";
+    }
+
+    function goProfile() {
+      window.location.href = "/static/profile.html";
+    }
+
+    function goIntegrations() {
+      window.location.href = "/static/integrations.html";
+    }
+
+    function goCLI() {
+      window.location.href = "/static/pip-package.html";
+    }
+
+    function logout() {
+      localStorage.removeItem("access_token");
+      window.location.href = "/static/index.html";
+    }
+  </script>
+</body>
+
+</html>
+
+</html>
