@@ -24,6 +24,8 @@ def main():
     provider = os.getenv("ONEKEY_PROVIDER", "groq")
     model = os.getenv("ONEKEY_MODEL", "llama-3.3-70b-versatile")
     prompt = os.getenv("ONEKEY_PROMPT", "What is GROQ?")
+    operation = os.getenv("ONEKEY_OPERATION")
+    payload_json = os.getenv("ONEKEY_PAYLOAD_JSON", "")
 
     platform_key = os.getenv("ONEKEY_PLATFORM_API_KEY")
     jwt_token = os.getenv("ONEKEY_JWT")
@@ -36,16 +38,25 @@ def main():
         platform_key = get_platform_key(base_url, jwt_token)
 
     client = OnekeyClient(base_url=base_url, platform_api_key=platform_key)
-    llm = LLMClient(client)
 
-    payload_messages = [{"role": "user", "content": prompt}]
+    payload = {}
+    if payload_json:
+        payload = json.loads(payload_json)
+
+    if operation and "operation" not in payload:
+        payload["operation"] = operation
 
     try:
-        result = llm.chat(
-            provider=provider,
-            model=model,
-            messages=payload_messages,
-        )
+        if category == "llm" and not payload:
+            llm = LLMClient(client)
+            payload_messages = [{"role": "user", "content": prompt}]
+            result = llm.chat(
+                provider=provider,
+                model=model,
+                messages=payload_messages,
+            )
+        else:
+            result = client.invoke(category=category, provider=provider, payload=payload)
     except requests.HTTPError as e:
         print("HTTP error:", e)
         if e.response is not None:

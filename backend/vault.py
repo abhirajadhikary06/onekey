@@ -1,4 +1,5 @@
 import re
+import json
 from datetime import datetime, timezone
 from typing import List, Optional
 
@@ -7,6 +8,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from . import database, dependencies, models, schemas, security, provider_detection
+from .integrations.catalog import PROVIDER_CATEGORY_MAP
 from .platform_key import get_or_create_platform_key
 
 router = APIRouter(prefix="/keys", tags=["vault"])
@@ -33,6 +35,149 @@ class ApiKeyCreate(BaseModel):
     key: str
     provider: Optional[str] = None
     expires_at: Optional[datetime] = None
+
+
+class RequestlyConfigRequest(BaseModel):
+    provider: str
+    operation: Optional[str] = None
+
+
+REQUESTLY_PROVIDER_TEMPLATES = {
+    "github": {
+        "category": "devops",
+        "default_operation": "list_repos",
+        "operations": {
+            "list_repos": {"operation": "list_repos", "per_page": 5, "sort": "updated", "direction": "desc"},
+            "get_repo": {"operation": "get_repo", "owner": "torvalds", "repo": "linux"},
+            "list_issues": {"operation": "list_issues", "state": "open", "per_page": 3},
+        },
+    },
+    "gitlab": {
+        "category": "devops",
+        "default_operation": "list_projects",
+        "operations": {
+            "list_projects": {"operation": "list_projects"},
+        },
+    },
+    "bitbucket": {
+        "category": "devops",
+        "default_operation": "list_repos",
+        "operations": {
+            "list_repos": {"operation": "list_repos", "workspace": "your-workspace"},
+        },
+    },
+    "openai": {
+        "category": "llm",
+        "default_operation": "chat",
+        "operations": {
+            "chat": {
+                "model": "gpt-4o-mini",
+                "messages": [{"role": "user", "content": "Say hello from Onekey."}],
+            }
+        },
+    },
+    "groq": {
+        "category": "llm",
+        "default_operation": "chat",
+        "operations": {
+            "chat": {
+                "model": "openai/gpt-oss-120b",
+                "messages": [{"role": "user", "content": "Say hello from Onekey."}],
+            }
+        },
+    },
+    "stripe": {
+        "category": "apis",
+        "default_operation": "list_customers",
+        "operations": {
+            "list_customers": {"operation": "list_customers"},
+        },
+    },
+    "slack": {
+        "category": "apis",
+        "default_operation": "list_channels",
+        "operations": {
+            "list_channels": {"operation": "list_channels"},
+        },
+    },
+    "pinecone": {
+        "category": "vector_db",
+        "default_operation": "list_indexes",
+        "operations": {
+            "list_indexes": {"operation": "list_indexes"},
+        },
+    },
+}
+
+
+def _default_payload_for_category(category: str) -> dict:
+    if category == "llm":
+        return {
+            "model": "gpt-4o-mini",
+            "messages": [{"role": "user", "content": "Say hello from Onekey."}],
+        }
+    if category == "vector_db":
+        return {"operation": "list_indexes"}
+    if category == "devops":
+        return {"operation": "list_repos"}
+    if category == "apis":
+        return {"operation": "list_channels"}
+    if category == "database":
+        return {"operation": "list_tables"}
+    if category == "data_engineering":
+        return {"operation": "list_projects"}
+    return {"operation": "health_check"}
+
+
+def _build_requestly_payload(provider: str, requested_operation: Optional[str]) -> tuple[str, str, dict, List[str]]:
+    provider_slug = provider.strip().lower()
+    template = REQUESTLY_PROVIDER_TEMPLATES.get(provider_slug)
+
+    if template:
+        category = template["category"]
+        operation = requested_operation or template["default_operation"]
+        payload = template["operations"].get(operation)
+        if not payload:
+            operation = template["default_operation"]
+            payload = template["operations"][operation]
+        available = list(template["operations"].keys())
+        return category, operation, payload, available
+
+    category = PROVIDER_CATEGORY_MAP.get(provider_slug)
+    if not category:
+        raise HTTPException(status_code=400, detail=f"Unsupported provider '{provider_slug}'")
+
+    payload = _default_payload_for_category(category)
+    operation = requested_operation or str(payload.get("operation", "chat"))
+    if requested_operation:
+        payload = {**payload, "operation": requested_operation}
+    return category, operation, payload, [operation]
+
+
+def _build_python_sdk_snippet(category: str, provider: str, payload: dict) -> str:
+    payload_json = json.dumps(payload, indent=2)
+    return (
+        "from onekey_sdk import OnekeyClient\n"
+        "import os\n\n"
+        "client = OnekeyClient(\n"
+        "    base_url=os.getenv(\"ONEKEY_API_URL\", \"https://onekey-ciwz.onrender.com\"),\n"
+        "    platform_api_key=os.getenv(\"ONEKEY_PLATFORM_API_KEY\"),\n"
+        "    timeout=30,\n"
+        ")\n\n"
+        f"payload = {payload_json}\n\n"
+        f"response = client.invoke(\"{category}\", \"{provider}\", payload)\n"
+        "print(response)\n"
+    )
+
+
+def _build_curl_snippet(category: str, provider: str, payload: dict) -> str:
+    payload_json = json.dumps(payload)
+    return (
+        f"curl -X POST https://onekey-ciwz.onrender.com/proxy/sdk/{category}/{provider} "
+        "-H \"Authorization: Bearer <ONEKEY_PLATFORM_API_KEY>\" "
+        "-H \"Content-Type: application/json\" "
+        f"-d '{payload_json}'"
+    )
 
 
 @router.post("/", response_model=schemas.ApiKeyOut, status_code=status.HTTP_201_CREATED)
@@ -214,4 +359,34 @@ def upgrade_to_premium(
     return {
         "message": "Successfully upgraded to premium!",
         "is_subscribed": True,
+    }
+
+
+@router.post("/requestly-config", response_model=dict)
+def requestly_config(
+    req: RequestlyConfigRequest,
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(dependencies.get_current_user),
+):
+    platform_api_key = get_or_create_platform_key(current_user, db)
+    provider = req.provider.strip().lower()
+    category, operation, payload, available_ops = _build_requestly_payload(provider, req.operation)
+
+    return {
+        "provider": provider,
+        "category": category,
+        "operation": operation,
+        "available_operations": available_ops,
+        "endpoint": f"/proxy/sdk/{category}/{provider}",
+        "method": "POST",
+        "payload": payload,
+        "platform_api_key": platform_api_key,
+        "python_sdk": _build_python_sdk_snippet(category, provider, payload),
+        "curl": _build_curl_snippet(category, provider, payload),
+        "requestly_url": "https://requestly.com/",
+        "notes": [
+            "Clicking Requestly opens the Requestly app.",
+            "Onekey also runs the same request immediately and shows output in a modal.",
+            "Copy the SDK or curl snippet to reproduce outside the UI.",
+        ],
     }

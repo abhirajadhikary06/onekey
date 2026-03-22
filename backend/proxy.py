@@ -8,69 +8,37 @@ from sqlalchemy.orm import Session
 from backend.mailer import send_api_alert_email
 
 from . import database, dependencies, models, security
+from .integrations import (
+    CATEGORY_PROVIDER_CONFIG,
+    PROVIDER_CATEGORY_MAP,
+    map_api_operation,
+    map_devops_operation,
+    map_vector_db_operation,
+)
 from .platform_key import get_user_for_platform_key, validate_platform_key
 
 router = APIRouter(prefix="/proxy", tags=["proxy"])
 
+# Reuse outbound connections to reduce DNS/TCP/TLS handshake overhead.
+_HTTP = requests.Session()
+_ADAPTER = HTTPAdapter(
+    pool_connections=128,
+    pool_maxsize=128,
+    max_retries=Retry(total=0, connect=0, read=0, redirect=0),
+)
+_HTTP.mount("https://", _ADAPTER)
+_HTTP.mount("http://", _ADAPTER)
 
-PROVIDER_CATEGORY_MAP = {
-    "openai": "llm",
-    "groq": "llm",
-    "anthropic": "llm",
-    "gemini": "llm",
-    "openrouter": "llm",
-    "mistral": "llm",
-    "together": "llm",
-    "fireworks": "llm",
-    "anyscale": "llm",
-    "deepinfra": "llm",
-    "nebius": "llm",
-    "cohere": "llm",
-    "ai21": "llm",
-    "perplexity": "llm",
-    "deepseek": "llm",
-    "qwen": "llm",
-    "grok": "llm",
-    "replicate": "llm",
-    "baseten": "llm",
-    "huggingface": "llm",
-    "pinecone": "vector_db",
-    "weaviate": "vector_db",
-    "qdrant": "vector_db",
-    "milvus": "vector_db",
-    "neondb": "database",
-    "xata": "database",
-    "airbyte": "data_engineering",
-    "dbt": "data_engineering",
-    "fivetran": "data_engineering",
-    "github": "devops",
-    "gitlab": "devops",
-    "bitbucket": "devops",
-    "supabase": "database",
-    "mongodb": "database",
-    "planetscale": "database",
-    "dagster": "data_engineering",
-    "prefect": "data_engineering",
-    "astronomer": "data_engineering",
-    "vercel": "devops",
-    "render": "devops",
-    "cloudflare": "devops",
-    "stripe": "apis",
-    "twilio": "apis",
-    "sendgrid": "apis",
-    "slack": "apis",
-    "notion": "apis",
-    "shopify": "apis",
-    "cockroachdb": "database",
-    "lancedb": "vector_db",
-    "meltano": "data_engineering",
-    "railway": "devops",
-    "discord": "apis",
-}
 
-PROVIDER_ALIASES = {
-    "claude": "anthropic",
-}
+def _http_post(url: str, *, headers: dict | None = None, json: dict | None = None, timeout: int = 60):
+    return _HTTP.post(url, headers=headers, json=json, timeout=timeout)
+
+
+def _http_get(url: str, *, headers: dict | None = None, timeout: int = 60):
+    return _HTTP.get(url, headers=headers, timeout=timeout)
+
+
+PROVIDER_ALIASES = {}
 
 
 def _canonical_provider(provider: str) -> str:
@@ -125,50 +93,57 @@ def _extract_provided_key(x_api_key: str | None, authorization: str | None) -> s
     return provided_key
 
 
-CATEGORY_PROVIDER_CONFIG = {
-    "vector_db": {
-        "pinecone": {"base_url": "https://api.pinecone.io", "auth_header": "Api-Key"},
-        "weaviate": {"base_url": None, "auth_header": "Authorization", "bearer": True},
-        "qdrant": {"base_url": "https://api.cloud.qdrant.io", "auth_header": "api-key"},
-        "milvus": {"base_url": None, "auth_header": "Authorization", "bearer": True},
-        "lancedb": {"base_url": None, "auth_header": "Authorization", "bearer": True},
-    },
-    "database": {
-        "neondb": {"base_url": None, "auth_header": "Authorization", "bearer": True},
-        "xata": {"base_url": "https://api.xata.io", "auth_header": "Authorization", "bearer": True},
-        "supabase": {"base_url": "https://api.supabase.com/v1", "auth_header": "apikey"},
-        "mongodb": {"base_url": None, "auth_header": "api-key"},
-        "planetscale": {"base_url": "https://api.planetscale.com/v1", "auth_header": "Authorization", "bearer": True},
-        "cockroachdb": {"base_url": "https://cockroachlabs.cloud/api/v1", "auth_header": "Authorization", "bearer": True},
-    },
-    "data_engineering": {
-        "airbyte": {"base_url": "https://api.airbyte.com/v1", "auth_header": "Authorization", "bearer": True},
-        "dbt": {"base_url": "https://cloud.getdbt.com/api/v2", "auth_header": "Authorization", "bearer": True},
-        "fivetran": {"base_url": "https://api.fivetran.com/v1", "auth_header": "Authorization", "bearer": True},
-        "dagster": {"base_url": None, "auth_header": "Authorization", "bearer": True},
-        "prefect": {"base_url": "https://api.prefect.cloud/api", "auth_header": "Authorization", "bearer": True},
-        "astronomer": {"base_url": None, "auth_header": "Authorization", "bearer": True},
-        "meltano": {"base_url": None, "auth_header": "Authorization", "bearer": True},
-    },
-    "devops": {
-        "github": {"base_url": "https://api.github.com", "auth_header": "Authorization", "bearer": True},
-        "gitlab": {"base_url": "https://gitlab.com/api/v4", "auth_header": "Authorization", "bearer": True},
-        "bitbucket": {"base_url": "https://api.bitbucket.org/2.0", "auth_header": "Authorization", "bearer": True},
-        "vercel": {"base_url": "https://api.vercel.com", "auth_header": "Authorization", "bearer": True},
-        "render": {"base_url": "https://api.render.com/v1", "auth_header": "Authorization", "bearer": True},
-        "cloudflare": {"base_url": "https://api.cloudflare.com/client/v4", "auth_header": "Authorization", "bearer": True},
-        "railway": {"base_url": "https://backboard.railway.app/graphql/v2", "auth_header": "Authorization", "bearer": True},
-    },
-    "apis": {
-        "stripe": {"base_url": "https://api.stripe.com/v1", "auth_header": "Authorization", "bearer": True},
-        "twilio": {"base_url": "https://api.twilio.com/2010-04-01", "auth_mode": "basic"},
-        "sendgrid": {"base_url": "https://api.sendgrid.com/v3", "auth_header": "Authorization", "bearer": True},
-        "slack": {"base_url": "https://slack.com/api", "auth_header": "Authorization", "bearer": True},
-        "notion": {"base_url": "https://api.notion.com/v1", "auth_header": "Authorization", "bearer": True},
-        "shopify": {"base_url": None, "auth_header": "X-Shopify-Access-Token"},
-        "discord": {"base_url": "https://discord.com/api/v10", "auth_header": "Authorization", "bearer": True},
-    },
-}
+def _required(body: dict, key: str, operation: str):
+    value = body.get(key)
+    if value in (None, ""):
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            f"Missing required field '{key}' for operation '{operation}'",
+        )
+    return value
+
+
+def _map_vector_db_operation(provider: str, operation: str, body: dict) -> dict:
+    return map_vector_db_operation(provider, operation, body)
+
+
+def _map_devops_operation(provider: str, operation: str, body: dict) -> dict:
+    return map_devops_operation(provider, operation, body)
+
+
+def _map_api_operation(provider: str, operation: str, body: dict) -> dict:
+    return map_api_operation(provider, operation, body)
+
+
+def _apply_operation_mapping(category: str, provider: str, body: dict) -> dict:
+    # If caller already provided explicit endpoint/path, preserve passthrough behavior.
+    if body.get("endpoint") or body.get("path"):
+        return body
+
+    operation = str(body.get("operation", "")).strip().lower()
+    if not operation:
+        return body
+
+    if category == "vector_db":
+        mapped = _map_vector_db_operation(provider, operation, body)
+    elif category == "devops":
+        mapped = _map_devops_operation(provider, operation, body)
+    elif category == "apis":
+        mapped = _map_api_operation(provider, operation, body)
+    else:
+        return body
+
+    # Preserve caller-provided tuning knobs and headers.
+    if body.get("headers") and not mapped.get("headers"):
+        mapped["headers"] = body["headers"]
+    if body.get("timeout") and not mapped.get("timeout"):
+        mapped["timeout"] = body["timeout"]
+    if body.get("base_url") and not mapped.get("base_url"):
+        mapped["base_url"] = body["base_url"]
+    if body.get("basic_username") and not mapped.get("basic_username"):
+        mapped["basic_username"] = body["basic_username"]
+
+    return mapped
 
 
 def _safe_target_url(base_url: str | None, endpoint: str | None) -> str:
@@ -187,15 +162,19 @@ def _run_category_passthrough(category: str, provider: str, api_key: str, body: 
     if not cfg:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Proxy not configured for {category}/{provider}")
 
+    body = _apply_operation_mapping(category, provider, body)
+
     method = str(body.get("method", "POST")).upper()
     endpoint = body.get("endpoint") or body.get("path")
-    url = _safe_target_url(cfg.get("base_url"), endpoint)
+    url = _safe_target_url(body.get("base_url") or cfg.get("base_url"), endpoint)
 
     headers = dict(body.get("headers", {}))
     auth_mode = cfg.get("auth_mode", "header")
     auth_header = cfg.get("auth_header", "Authorization")
     if auth_mode == "basic":
-        token = base64.b64encode(api_key.encode()).decode()
+        basic_username = body.get("basic_username")
+        basic_secret = f"{basic_username}:{api_key}" if basic_username else api_key
+        token = base64.b64encode(basic_secret.encode()).decode()
         headers["Authorization"] = f"Basic {token}"
     elif cfg.get("bearer", False):
         headers[auth_header] = f"Bearer {api_key}"
@@ -210,10 +189,20 @@ def _run_category_passthrough(category: str, provider: str, api_key: str, body: 
     if json_payload is None and data_payload is None:
         json_payload = {
             k: v for k, v in body.items()
-            if k not in {"method", "endpoint", "path", "headers", "params", "timeout"}
+            if k not in {
+                "method",
+                "endpoint",
+                "path",
+                "headers",
+                "params",
+                "timeout",
+                "operation",
+                "base_url",
+                "basic_username",
+            }
         }
 
-    return requests.request(
+    return _HTTP.request(
         method=method,
         url=url,
         headers=headers,
@@ -230,7 +219,7 @@ def _run_openai(api_key: str, body: dict):
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-    return requests.post(url, headers=headers, json=body)
+    return _http_post(url, headers=headers, json=body)
 
 
 def _run_groq(api_key: str, body: dict):
@@ -239,7 +228,7 @@ def _run_groq(api_key: str, body: dict):
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-    return requests.post(url, headers=headers, json=body)
+    return _http_post(url, headers=headers, json=body)
 
 
 def _run_anthropic(api_key: str, body: dict):
@@ -249,14 +238,14 @@ def _run_anthropic(api_key: str, body: dict):
         "anthropic-version": "2023-06-01",
         "Content-Type": "application/json",
     }
-    return requests.post(url, headers=headers, json=body)
+    return _http_post(url, headers=headers, json=body)
 
 
 def _run_gemini(api_key: str, body: dict):
     # Gemini uses a different format - model in URL
     model = body.get("model", "gemini-2.5-flash")
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
-    return requests.post(url, json=body)
+    return _http_post(url, json=body)
 
 
 def _run_openrouter(api_key: str, body: dict):
@@ -265,7 +254,7 @@ def _run_openrouter(api_key: str, body: dict):
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-    return requests.post(url, headers=headers, json=body)
+    return _http_post(url, headers=headers, json=body)
 
 
 def _run_mistral(api_key: str, body: dict):
@@ -274,7 +263,7 @@ def _run_mistral(api_key: str, body: dict):
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-    return requests.post(url, headers=headers, json=body)
+    return _http_post(url, headers=headers, json=body)
 
 
 def _run_together(api_key: str, body: dict):
@@ -283,7 +272,7 @@ def _run_together(api_key: str, body: dict):
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-    return requests.post(url, headers=headers, json=body)
+    return _http_post(url, headers=headers, json=body)
 
 
 def _run_fireworks(api_key: str, body: dict):
@@ -292,7 +281,7 @@ def _run_fireworks(api_key: str, body: dict):
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-    return requests.post(url, headers=headers, json=body)
+    return _http_post(url, headers=headers, json=body)
 
 
 def _run_anyscale(api_key: str, body: dict):
@@ -301,7 +290,7 @@ def _run_anyscale(api_key: str, body: dict):
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-    return requests.post(url, headers=headers, json=body)
+    return _http_post(url, headers=headers, json=body)
 
 
 def _run_deepinfra(api_key: str, body: dict):
@@ -310,7 +299,7 @@ def _run_deepinfra(api_key: str, body: dict):
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-    return requests.post(url, headers=headers, json=body)
+    return _http_post(url, headers=headers, json=body)
 
 
 def _run_nebius(api_key: str, body: dict):
@@ -319,7 +308,7 @@ def _run_nebius(api_key: str, body: dict):
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-    return requests.post(url, headers=headers, json=body)
+    return _http_post(url, headers=headers, json=body)
 
 
 def _run_cohere(api_key: str, body: dict):
@@ -328,7 +317,7 @@ def _run_cohere(api_key: str, body: dict):
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-    return requests.post(url, headers=headers, json=body)
+    return _http_post(url, headers=headers, json=body)
 
 
 def _run_ai21(api_key: str, body: dict):
@@ -337,7 +326,7 @@ def _run_ai21(api_key: str, body: dict):
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-    return requests.post(url, headers=headers, json=body)
+    return _http_post(url, headers=headers, json=body)
 
 
 def _run_perplexity(api_key: str, body: dict):
@@ -346,7 +335,7 @@ def _run_perplexity(api_key: str, body: dict):
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-    return requests.post(url, headers=headers, json=body)
+    return _http_post(url, headers=headers, json=body)
 
 
 def _run_deepseek(api_key: str, body: dict):
@@ -355,7 +344,7 @@ def _run_deepseek(api_key: str, body: dict):
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-    return requests.post(url, headers=headers, json=body)
+    return _http_post(url, headers=headers, json=body)
 
 
 def _run_qwen(api_key: str, body: dict):
@@ -364,7 +353,7 @@ def _run_qwen(api_key: str, body: dict):
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-    return requests.post(url, headers=headers, json=body)
+    return _http_post(url, headers=headers, json=body)
 
 
 def _run_grok(api_key: str, body: dict):
@@ -373,7 +362,7 @@ def _run_grok(api_key: str, body: dict):
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-    return requests.post(url, headers=headers, json=body)
+    return _http_post(url, headers=headers, json=body)
 
 
 def _run_replicate(api_key: str, body: dict):
@@ -382,7 +371,7 @@ def _run_replicate(api_key: str, body: dict):
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-    create_resp = requests.post(create_url, headers=headers, json=body)
+    create_resp = _http_post(create_url, headers=headers, json=body)
     if create_resp.status_code >= 400:
         return create_resp
     prediction = create_resp.json()
@@ -392,7 +381,7 @@ def _run_replicate(api_key: str, body: dict):
     
     while True:
         get_url = f"https://api.replicate.com/v1/predictions/{prediction_id}"
-        get_resp = requests.get(get_url, headers=headers)
+        get_resp = _http_get(get_url, headers=headers)
         if get_resp.status_code >= 400:
             return get_resp
         data = get_resp.json()
@@ -409,7 +398,7 @@ def _run_baseten(api_key: str, body: dict):
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-    return requests.post(url, headers=headers, json=body)
+    return _http_post(url, headers=headers, json=body)
 
 
 def _run_huggingface(api_key: str, body: dict):
@@ -418,7 +407,7 @@ def _run_huggingface(api_key: str, body: dict):
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-    return requests.post(url, headers=headers, json=body)
+    return _http_post(url, headers=headers, json=body)
 
 # Note: For "modal", no fixed API endpoint as it's a deployment platform. 
 # Users deploy custom endpoints, so proxy not implemented here.
@@ -427,11 +416,6 @@ def _run_huggingface(api_key: str, body: dict):
 
 async def _proxy_request(provider: str, key_record: models.ApiKey, request: Request, db: Session, background_tasks: BackgroundTasks, category: str = "llm"):
     _ensure_not_expired(key_record)
-
-    try:
-        body = await request.json()
-    except Exception:
-        raise HTTPException(400, "Invalid JSON body")
 
     api_key = security.decrypt_api_key(key_record.encrypted_key)
 
@@ -516,10 +500,10 @@ async def _proxy_request(provider: str, key_record: models.ApiKey, request: Requ
     return resp.json()
 
 @router.post("/{provider}/{name_slug}")
-async def proxy_request_named(
+def proxy_request_named(
     provider: str,
     name_slug: str,
-    request: Request,
+    body: dict = Body(...),
     db: Session = Depends(database.get_db),
     background_tasks: BackgroundTasks = None,
     current_user: models.User = Depends(dependencies.get_current_user),
@@ -535,9 +519,9 @@ async def proxy_request_named(
 
 
 @router.post("/{provider}")
-async def proxy_request_default(
+def proxy_request_default(
     provider: str,
-    request: Request,
+    body: dict = Body(...),
     db: Session = Depends(database.get_db),
     background_tasks: BackgroundTasks = None,
     current_user: models.User = Depends(dependencies.get_current_user),
@@ -556,10 +540,10 @@ async def proxy_request_default(
 
 
 @router.post("/u/{provider}/{name_slug}")
-async def proxy_unified(
+def proxy_unified(
     provider: str,
     name_slug: str,
-    request: Request,
+    body: dict = Body(...),
     db: Session = Depends(database.get_db),
     x_api_key: str | None = Header(default=None, convert_underscores=False),
     authorization: str | None = Header(default=None),
@@ -586,11 +570,11 @@ async def proxy_unified(
 
 
 @router.post("/sdk/{category}/{provider}/{name_slug}")
-async def proxy_unified_category(
+def proxy_unified_category(
     category: str,
     provider: str,
     name_slug: str,
-    request: Request,
+    body: dict = Body(...),
     db: Session = Depends(database.get_db),
     x_api_key: str | None = Header(default=None, convert_underscores=False),
     authorization: str | None = Header(default=None),
@@ -629,10 +613,10 @@ async def proxy_unified_category(
 
 
 @router.post("/sdk/{category}/{provider}")
-async def proxy_unified_category_default(
+def proxy_unified_category_default(
     category: str,
     provider: str,
-    request: Request,
+    body: dict = Body(...),
     db: Session = Depends(database.get_db),
     x_api_key: str | None = Header(default=None, convert_underscores=False),
     authorization: str | None = Header(default=None),
