@@ -3,7 +3,9 @@ import asyncio
 import base64
 from datetime import datetime, timezone
 import requests
-from fastapi import APIRouter, Depends, Header, HTTPException, Request, status, BackgroundTasks
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, status, BackgroundTasks, Body
 from sqlalchemy.orm import Session
 from backend.mailer import send_api_alert_email
 
@@ -500,10 +502,10 @@ async def _proxy_request(provider: str, key_record: models.ApiKey, request: Requ
     return resp.json()
 
 @router.post("/{provider}/{name_slug}")
-def proxy_request_named(
+async def proxy_request_named(
     provider: str,
     name_slug: str,
-    body: dict = Body(...),
+    request: Request,
     db: Session = Depends(database.get_db),
     background_tasks: BackgroundTasks = None,
     current_user: models.User = Depends(dependencies.get_current_user),
@@ -519,9 +521,9 @@ def proxy_request_named(
 
 
 @router.post("/{provider}")
-def proxy_request_default(
+async def proxy_request_default(
     provider: str,
-    body: dict = Body(...),
+    request: Request,
     db: Session = Depends(database.get_db),
     background_tasks: BackgroundTasks = None,
     current_user: models.User = Depends(dependencies.get_current_user),
@@ -540,10 +542,10 @@ def proxy_request_default(
 
 
 @router.post("/u/{provider}/{name_slug}")
-def proxy_unified(
+async def proxy_unified(
     provider: str,
     name_slug: str,
-    body: dict = Body(...),
+    request: Request,
     db: Session = Depends(database.get_db),
     x_api_key: str | None = Header(default=None, convert_underscores=False),
     authorization: str | None = Header(default=None),
@@ -570,11 +572,11 @@ def proxy_unified(
 
 
 @router.post("/sdk/{category}/{provider}/{name_slug}")
-def proxy_unified_category(
+async def proxy_unified_category(
     category: str,
     provider: str,
     name_slug: str,
-    body: dict = Body(...),
+    request: Request,
     db: Session = Depends(database.get_db),
     x_api_key: str | None = Header(default=None, convert_underscores=False),
     authorization: str | None = Header(default=None),
@@ -594,8 +596,8 @@ def proxy_unified_category(
         # Trigger alert for failed auth if we have the owner's email
         if owner and owner.email:
             try:
-                # Try to get model from body if possible
-                body = asyncio.run_coroutine_threadsafe(request.json(), asyncio.get_event_loop()).result()
+                # Use await because request.json() is a coroutine in FastAPI
+                body = await request.json()
             except:
                 body = {}
             background_tasks.add_task(
@@ -613,10 +615,10 @@ def proxy_unified_category(
 
 
 @router.post("/sdk/{category}/{provider}")
-def proxy_unified_category_default(
+async def proxy_unified_category_default(
     category: str,
     provider: str,
-    body: dict = Body(...),
+    request: Request,
     db: Session = Depends(database.get_db),
     x_api_key: str | None = Header(default=None, convert_underscores=False),
     authorization: str | None = Header(default=None),
