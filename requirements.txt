@@ -18,3 +18,5 @@ langchain-groq>=0.2.0
 langchain-community>=0.3.0
 langchain-classic>=0.0.1
 fastapi-mail>=1.4.1
+dodopayments
+dodopayments[aiohttp]

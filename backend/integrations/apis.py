@@ -25,6 +25,49 @@ def map_api_operation(provider: str, operation: str, body: dict) -> dict:
                 "data": required(body, "payload", operation),
             }
 
+    if provider == "dodo_payments":
+        if operation == "create_checkout_session":
+            return {
+                "method": "POST",
+                "endpoint": "/checkouts",
+                "json": required(body, "payload", operation),
+            }
+        if operation == "get_checkout_session":
+            return {
+                "method": "GET",
+                "endpoint": f"/checkouts/{required(body, 'session_id', operation)}",
+            }
+        if operation == "create_customer":
+            return {
+                "method": "POST",
+                "endpoint": "/customers",
+                "json": required(body, "payload", operation),
+            }
+        if operation == "list_customers":
+            return {"method": "GET", "endpoint": "/customers"}
+        if operation == "retrieve_customer":
+            return {
+                "method": "GET",
+                "endpoint": f"/customers/{required(body, 'customer_id', operation)}",
+            }
+        if operation == "create_subscription":
+            return {
+                "method": "POST",
+                "endpoint": "/subscriptions",
+                "json": required(body, "payload", operation),
+            }
+        if operation == "retrieve_usage_history":
+            return {
+                "method": "GET",
+                "endpoint": f"/subscriptions/{required(body, 'subscription_id', operation)}/usage-history",
+            }
+        if operation == "ingest_usage_events":
+            return {
+                "method": "POST",
+                "endpoint": "/usage-events",
+                "json": required(body, "payload", operation),
+            }
+
     if provider == "twilio":
         account_sid = required(body, "account_sid", operation)
         if operation == "send_sms":

@@ -19,8 +19,8 @@ def get_platform_key(base_url: str, jwt_token: str) -> str:
 
 
 def main():
-    # base_url = os.getenv("ONEKEY_BASE_URL", "https://onekey-ciwz.onrender.com")
-    base_url = os.getenv("ONEKEY_BASE_URL", "http://localhost:8000/")
+    base_url = os.getenv("ONEKEY_BASE_URL", "https://onekey-ciwz.onrender.com")
+    category = os.getenv("ONEKEY_CATEGORY", "llm")
     provider = os.getenv("ONEKEY_PROVIDER", "groq")
     model = os.getenv("ONEKEY_MODEL", "llama-3.3-70b-versatile")
     prompt = os.getenv("ONEKEY_PROMPT", "What is GROQ?")

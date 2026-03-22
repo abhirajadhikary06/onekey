@@ -86,6 +86,8 @@ PROVIDER_REGEX_PATTERNS: list[tuple[re.Pattern[str], str]] = [
     (re.compile(r"^SQ[A-Za-z0-9]{32}$"), "twilio"),
     (re.compile(r"^SK[A-Za-z0-9]{32}$"), "twilio"),
     (re.compile(r"^AC[A-Za-z0-9]{32}$"), "twilio"),
+    # Dodo keys are token-like and currently observed as two URL-safe segments split by one dot.
+    (re.compile(r"^[A-Za-z0-9_-]{12,}\.[A-Za-z0-9_-]{24,}$"), "dodo_payments"),
     (re.compile(r"^pnu_[A-Za-z0-9]+$"), "prefect"),
     (re.compile(r"^pnb_[A-Za-z0-9]+$"), "prefect"),
 ]

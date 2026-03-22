@@ -41,6 +41,7 @@ PROVIDER_CATEGORY_MAP = {
     "render": "devops",
     "cloudflare": "devops",
     "stripe": "apis",
+    "dodo_payments": "apis",
     "twilio": "apis",
     "sendgrid": "apis",
     "slack": "apis",
@@ -90,6 +91,7 @@ CATEGORY_PROVIDER_CONFIG = {
     },
     "apis": {
         "stripe": {"base_url": "https://api.stripe.com/v1", "auth_header": "Authorization", "bearer": True},
+        "dodo_payments": {"base_url": "https://live.dodopayments.com", "auth_header": "Authorization", "bearer": True},
         "twilio": {"base_url": "https://api.twilio.com/2010-04-01", "auth_mode": "basic"},
         "sendgrid": {"base_url": "https://api.sendgrid.com/v3", "auth_header": "Authorization", "bearer": True},
         "slack": {"base_url": "https://slack.com/api", "auth_header": "Authorization", "bearer": True},
