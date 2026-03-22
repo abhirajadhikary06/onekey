@@ -594,8 +594,8 @@ def proxy_unified_category(
         # Trigger alert for failed auth if we have the owner's email
         if owner and owner.email:
             try:
-                # Try to get model from body if possible
-                body = asyncio.run_coroutine_threadsafe(request.json(), asyncio.get_event_loop()).result()
+                # Use await because request.json() is a coroutine in FastAPI
+                body = await request.json()
             except:
                 body = {}
             background_tasks.add_task(
