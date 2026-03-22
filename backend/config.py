@@ -41,3 +41,9 @@ MAIL_SERVER = os.getenv("MAIL_SERVER")
 MAIL_STARTTLS = os.getenv("MAIL_STARTTLS", "True").lower() in ("true", "1", "t")
 MAIL_SSL_TLS = os.getenv("MAIL_SSL_TLS", "False").lower() in ("true", "1", "t")
 
+# Dodo Payments Configuration
+DODO_PAYMENTS_API_KEY = os.getenv("DODO_PAYMENTS_API_KEY")
+DODO_PAYMENTS_ENVIRONMENT = os.getenv("DODO_PAYMENTS_ENVIRONMENT", "test_mode")
+DODO_PREMIUM_PRODUCT_ID = os.getenv("DODO_PREMIUM_PRODUCT_ID")
+DODO_RETURN_URL = os.getenv("DODO_RETURN_URL", "https://onekey-ciwz.onrender.com/static/dashboard.html")
+

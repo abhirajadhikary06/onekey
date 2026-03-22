@@ -940,17 +940,87 @@
       }
 
       async function upgradeAccount() {
+        const addStatus = document.getElementById("addStatus");
+
         try {
-          const res = await fetch("/keys/upgrade", { method: "POST", headers });
+          addStatus.className = "";
+          addStatus.textContent = "Creating secure checkout session...";
+
+          const res = await fetch("/keys/upgrade", {
+            method: "POST",
+            headers,
+            body: JSON.stringify({}),
+          });
           if (!res.ok) {
             const err = await res.json();
             throw new Error(err.detail || "Upgrade failed");
           }
-          alert("✓ Successfully upgraded to premium! You can now add unlimited API keys.");
-          loadKeyStatus();
+
+          const payload = await res.json();
+
+          if (payload.status === "already_subscribed") {
+            alert("You are already on premium.");
+            addStatus.className = "success";
+            addStatus.textContent = "✓ Already premium.";
+            loadKeyStatus();
+            return;
+          }
+
+          if (!payload.checkout_url || !payload.session_id) {
+            throw new Error("Invalid checkout response from server");
+          }
+
+          const checkoutTab = window.open(payload.checkout_url, "_blank");
+          if (!checkoutTab) {
+            window.location.href = payload.checkout_url;
+            return;
+          }
+
+          addStatus.textContent = "Checkout opened. Waiting for payment confirmation...";
+          const result = await waitForUpgradeCompletion(payload.session_id, 90, 4000);
+
+          if (result.status === "paid" || result.is_subscribed) {
+            addStatus.className = "success";
+            addStatus.textContent = "✓ Payment verified. Premium is now active.";
+            alert("✓ Payment successful. Premium unlocked.");
+            loadKeyStatus();
+          } else if (result.status === "failed") {
+            addStatus.className = "error";
+            addStatus.textContent = `Payment was not completed (${result.checkout_status || result.status}).`;
+            alert("Payment failed or cancelled. Please try again.");
+          } else {
+            addStatus.className = "error";
+            addStatus.textContent = "Still pending. You can refresh status after completing checkout.";
+            alert("Payment is still pending. Complete checkout and try again.");
+          }
         } catch (err) {
+          addStatus.className = "error";
+          addStatus.textContent = "Error: " + err.message;
           alert("Error: " + err.message);
         }
+      }
+
+      function delay(ms) {
+        return new Promise((resolve) => setTimeout(resolve, ms));
+      }
+
+      async function waitForUpgradeCompletion(sessionId, maxAttempts = 60, delayMs = 5000) {
+        for (let i = 0; i < maxAttempts; i++) {
+          const res = await fetch(`/keys/upgrade/status/${encodeURIComponent(sessionId)}`, { headers });
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.detail || "Failed to verify payment status");
+          }
+
+          const payload = await res.json();
+          if (payload.status === "paid" || payload.is_subscribed || payload.status === "failed") {
+            return payload;
+          }
+
+          await delay(delayMs);
+        }
+
+        return { status: "pending", is_subscribed: false };
       }
 
       async function addKey() {

@@ -14,16 +14,6 @@ class APIsClient(CategoryClient):
         payload.update(kwargs)
         return self.call(provider, payload)
 
-    def create_checkout_session(self, provider: str, **kwargs: Any):
-        payload = {"operation": "create_checkout_session"}
-        payload.update(kwargs)
-        return self.call(provider, payload)
-
-    def get_checkout_session(self, provider: str, **kwargs: Any):
-        payload = {"operation": "get_checkout_session"}
-        payload.update(kwargs)
-        return self.call(provider, payload)
-
     def retrieve_payment_intent(self, provider: str, **kwargs: Any):
         payload = {"operation": "retrieve_payment_intent"}
         payload.update(kwargs)
@@ -36,26 +26,6 @@ class APIsClient(CategoryClient):
 
     def create_customer(self, provider: str, **kwargs: Any):
         payload = {"operation": "create_customer"}
-        payload.update(kwargs)
-        return self.call(provider, payload)
-
-    def retrieve_customer(self, provider: str, **kwargs: Any):
-        payload = {"operation": "retrieve_customer"}
-        payload.update(kwargs)
-        return self.call(provider, payload)
-
-    def create_subscription(self, provider: str, **kwargs: Any):
-        payload = {"operation": "create_subscription"}
-        payload.update(kwargs)
-        return self.call(provider, payload)
-
-    def retrieve_usage_history(self, provider: str, **kwargs: Any):
-        payload = {"operation": "retrieve_usage_history"}
-        payload.update(kwargs)
-        return self.call(provider, payload)
-
-    def ingest_usage_events(self, provider: str, **kwargs: Any):
-        payload = {"operation": "ingest_usage_events"}
         payload.update(kwargs)
         return self.call(provider, payload)
 

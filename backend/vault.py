@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from . import database, dependencies, models, schemas, security, provider_detection
+from . import config, database, dependencies, models, schemas, security, provider_detection
 from .integrations.catalog import PROVIDER_CATEGORY_MAP
 from .platform_key import get_or_create_platform_key
 
@@ -40,6 +40,11 @@ class ApiKeyCreate(BaseModel):
 class RequestlyConfigRequest(BaseModel):
     provider: str
     operation: Optional[str] = None
+
+
+class UpgradeCheckoutRequest(BaseModel):
+    product_id: Optional[str] = None
+    quantity: int = 1
 
 
 REQUESTLY_PROVIDER_TEMPLATES = {
@@ -178,6 +183,97 @@ def _build_curl_snippet(category: str, provider: str, payload: dict) -> str:
         "-H \"Content-Type: application/json\" "
         f"-d '{payload_json}'"
     )
+
+
+def _dodo_client():
+    if not config.DODO_PAYMENTS_API_KEY:
+        raise HTTPException(status_code=500, detail="DODO_PAYMENTS_API_KEY is not configured")
+    try:
+        from dodopayments import DodoPayments
+    except ImportError as exc:
+        raise HTTPException(status_code=500, detail="dodopayments package is not installed") from exc
+
+    return DodoPayments(
+        bearer_token=config.DODO_PAYMENTS_API_KEY,
+        environment=config.DODO_PAYMENTS_ENVIRONMENT,
+    )
+
+
+def _to_plain_dict(obj) -> dict:
+    if obj is None:
+        return {}
+    if isinstance(obj, dict):
+        return obj
+    if hasattr(obj, "model_dump"):
+        return obj.model_dump()
+    if hasattr(obj, "dict"):
+        return obj.dict()
+    if hasattr(obj, "__dict__"):
+        return {
+            k: v
+            for k, v in obj.__dict__.items()
+            if not k.startswith("_")
+        }
+    return {}
+
+
+def _extract_email(data: dict) -> Optional[str]:
+    if not isinstance(data, dict):
+        return None
+
+    direct_keys = ("customer_email", "email")
+    for key in direct_keys:
+        value = data.get(key)
+        if isinstance(value, str) and value:
+            return value
+
+    customer = data.get("customer")
+    if isinstance(customer, dict):
+        value = customer.get("email")
+        if isinstance(value, str) and value:
+            return value
+
+    return None
+
+
+def _extract_checkout_status(data: dict) -> str:
+    possible_keys = (
+        "payment_status",
+        "status",
+        "checkout_status",
+        "session_status",
+        "state",
+    )
+
+    for key in possible_keys:
+        value = data.get(key)
+        if isinstance(value, str) and value:
+            return value.strip().lower()
+
+    return "pending"
+
+
+def _is_paid_status(value: str) -> bool:
+    return value in {
+        "paid",
+        "completed",
+        "success",
+        "succeeded",
+        "active",
+        "confirmed",
+    }
+
+
+def _is_failed_status(value: str) -> bool:
+    return value in {
+        "failed",
+        "cancelled",
+        "canceled",
+        "expired",
+        "unpaid",
+        "error",
+        "declined",
+    }
 
 
 @router.post("/", response_model=schemas.ApiKeyOut, status_code=status.HTTP_201_CREATED)
@@ -350,15 +446,108 @@ def delete_key(
 
 @router.post("/upgrade", status_code=status.HTTP_200_OK)
 def upgrade_to_premium(
+    payload: UpgradeCheckoutRequest,
     db: Session = Depends(database.get_db),
     current_user: models.User = Depends(dependencies.get_current_user),
 ):
-    """Upgrade user to premium subscription (unlimited API keys)."""
-    current_user.is_subscribed = True
-    db.commit()
+    """Create Dodo checkout session for premium upgrade."""
+    if current_user.is_subscribed:
+        return {
+            "message": "User is already subscribed",
+            "is_subscribed": True,
+            "status": "already_subscribed",
+        }
+
+    product_id = payload.product_id or config.DODO_PREMIUM_PRODUCT_ID
+    if not product_id:
+        raise HTTPException(
+            status_code=400,
+            detail="DODO_PREMIUM_PRODUCT_ID is not configured",
+        )
+
+    client = _dodo_client()
+    quantity = 1 if payload.quantity < 1 else payload.quantity
+
+    try:
+        session = client.checkout_sessions.create(
+            product_cart=[
+                {
+                    "product_id": product_id,
+                    "quantity": quantity,
+                }
+            ],
+            return_url=config.DODO_RETURN_URL,
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Failed to create Dodo checkout session: {exc}") from exc
+
+    session_data = _to_plain_dict(session)
+    checkout_url = getattr(session, "url", None) or session_data.get("url") or session_data.get("checkout_url")
+    session_id = getattr(session, "session_id", None) or session_data.get("session_id") or session_data.get("id")
+
+    if not checkout_url or not session_id:
+        raise HTTPException(status_code=502, detail="Invalid checkout session response from Dodo")
+
     return {
-        "message": "Successfully upgraded to premium!",
-        "is_subscribed": True,
+        "status": "checkout_created",
+        "is_subscribed": False,
+        "checkout_url": checkout_url,
+        "session_id": session_id,
+        "provider": "dodo_payments",
+    }
+
+
+@router.get("/upgrade/status/{session_id}", response_model=dict)
+def check_upgrade_status(
+    session_id: str,
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(dependencies.get_current_user),
+):
+    """Verify Dodo checkout status and activate premium when payment is successful."""
+    if current_user.is_subscribed:
+        return {
+            "status": "already_subscribed",
+            "is_subscribed": True,
+            "session_id": session_id,
+        }
+
+    client = _dodo_client()
+
+    try:
+        checkout = client.checkout_sessions.retrieve(session_id)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Failed to retrieve Dodo checkout session: {exc}") from exc
+
+    checkout_data = _to_plain_dict(checkout)
+    checkout_status = _extract_checkout_status(checkout_data)
+
+    checkout_email = _extract_email(checkout_data)
+    if current_user.email and checkout_email and current_user.email.lower() != checkout_email.lower():
+        raise HTTPException(status_code=403, detail="Checkout session does not belong to current user")
+
+    if _is_paid_status(checkout_status):
+        current_user.is_subscribed = True
+        db.commit()
+        return {
+            "status": "paid",
+            "is_subscribed": True,
+            "session_id": session_id,
+            "checkout_status": checkout_status,
+        }
+
+    if _is_failed_status(checkout_status):
+        return {
+            "status": "failed",
+            "is_subscribed": False,
+            "session_id": session_id,
+            "checkout_status": checkout_status,
+        }
+
+    return {
+        "status": "pending",
+        "is_subscribed": False,
+        "session_id": session_id,
+        "checkout_status": checkout_status,
     }
 
 
