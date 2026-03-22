@@ -2,7 +2,7 @@
 
 
 a = Analysis(
-    ['onekey_sdk/cli.py'],
+    ['onekey/cli.py'],
     pathex=[],
     binaries=[],
     datas=[],

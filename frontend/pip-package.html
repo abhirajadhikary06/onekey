@@ -610,6 +610,34 @@
               />
               Dashboard
             </button>
+            <button class="dropdown-item" onclick="goDocs()">
+              <img
+                src="static/images/docs.png"
+                alt="Docs"
+                style="
+                  width: 20px;
+                  height: 20px;
+                  margin-right: 0.5rem;
+                  vertical-align: middle;
+                  object-fit: contain;
+                "
+              />
+              Docs
+            </button>
+            <button class="dropdown-item" onclick="goIntegrations()">
+              <img
+                src="static/images/integrations.png"
+                alt="Integrations"
+                style="
+                  width: 20px;
+                  height: 20px;
+                  margin-right: 0.5rem;
+                  vertical-align: middle;
+                  object-fit: contain;
+                "
+              />
+              Integrations
+            </button>
             <button class="dropdown-item logout" onclick="logout()">
               <img
                 src="static/images/logout.png"
@@ -985,6 +1013,12 @@
 
       function goDashboard() {
         window.location.href = "/static/dashboard.html";
+      }
+      function goDocs() {
+        window.location.href = "/static/docs.html";
+      }
+      function goIntegrations() {
+        window.location.href = "/static/integrations.html";
       }
 
       function logout() {

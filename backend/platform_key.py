@@ -25,7 +25,8 @@ def get_or_create_platform_key(user: models.User, db: Session) -> str:
 def validate_platform_key(user: models.User, provided_key: str) -> bool:
     if not user.platform_unified_key_encrypted:
         return False
-    return security.decrypt_api_key(user.platform_unified_key_encrypted) == provided_key
+    decrypted = security.decrypt_api_key(user.platform_unified_key_encrypted)
+    return decrypted == provided_key
 
 
 def get_user_for_platform_key(db: Session, provided_key: str, return_user_on_invalid_key: bool = False) -> models.User | None:

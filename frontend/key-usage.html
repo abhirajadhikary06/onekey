@@ -360,6 +360,14 @@
             <img class="dropdown-icon" src="static/images/pypylogo.png" alt="PIP Package" />
             PIP Package
           </button>
+          <button class="dropdown-item" onclick="goDocs()">
+            <img class="dropdown-icon" src="static/images/docs.png" alt="Docs" />
+            Docs
+          </button>
+          <button class="dropdown-item" onclick="goIntegrations()">
+            <img class="dropdown-icon" src="static/images/integrations.png" alt="Integrations" />
+            Integrations
+          </button>
           <button class="dropdown-item logout" onclick="logout()">
             <img class="dropdown-icon" src="static/images/logout.png" alt="Logout" />
             Logout
@@ -430,6 +438,12 @@
 
       function goCLI() {
         window.location.href = "/static/pip-package.html";
+      }
+      function goDocs() {
+        window.location.href = "/static/docs.html";
+      }
+      function goIntegrations() {
+        window.location.href = "/static/integrations.html";
       }
 
       function logout() {

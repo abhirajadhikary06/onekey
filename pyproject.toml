@@ -4,23 +4,28 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "onekey"
-version = "0.1.0"
+version = "0.1.1"
 description = "Unified API key platform SDK with category-based integrations"
-readme = "README.md"
+readme = { file = "README.md", content-type = "text/markdown" }
 requires-python = ">=3.10"
 license = { text = "MIT" }
 authors = [
   { name = "Onekey Team" }
 ]
 dependencies = [
-  "requests>=2.32.0"
+  "requests>=2.32.0",
+  "typer>=0.12.0",
+  "rich>=13.0.0"
 ]
 
 [project.urls]
-Homepage = "https://github.com/anikchand461/onekey"
-Repository = "https://github.com/anikchand461/onekey"
+Homepage = "https://onekey-ciwz.onrender.com"
+Repository = "https://github.com/abhirajadhikary06/onekey"
+
+[project.scripts]
+onekey = "onekey.cli:app"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["onekey_sdk", "onekey_sdk.*"]
+include = ["onekey", "onekey.*"]
 exclude = ["backend*", "frontend*", "release*", "tests*", "venv*"]
