@@ -1,11 +1,11 @@
 import time
+import asyncio
 import base64
 from datetime import datetime, timezone
 import requests
-from fastapi import APIRouter, Body, Depends, Header, HTTPException, status
-from requests.adapters import HTTPAdapter
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, status, BackgroundTasks
 from sqlalchemy.orm import Session
-from urllib3.util.retry import Retry
+from backend.mailer import send_api_alert_email
 
 from . import database, dependencies, models, security
 from .integrations import (
@@ -414,7 +414,7 @@ def _run_huggingface(api_key: str, body: dict):
 # If you have a specific base URL, you can add it similarly.
 
 
-def _proxy_request(provider: str, key_record: models.ApiKey, body: dict, db: Session, category: str = "llm"):
+async def _proxy_request(provider: str, key_record: models.ApiKey, request: Request, db: Session, background_tasks: BackgroundTasks, category: str = "llm"):
     _ensure_not_expired(key_record)
 
     api_key = security.decrypt_api_key(key_record.encrypted_key)
@@ -480,6 +480,20 @@ def _proxy_request(provider: str, key_record: models.ApiKey, body: dict, db: Ses
     db.add(usage_log)
     db.commit()
 
+    user = db.query(models.User).filter(models.User.id == key_record.user_id).first()
+    if user and user.email:
+        model = body.get("model") or body.get("engine")
+        endpoint = body.get("endpoint") or body.get("path")
+        background_tasks.add_task(
+            send_api_alert_email, 
+            user.email, 
+            provider, 
+            resp.status_code, 
+            resp.text,
+            model=model,
+            endpoint=endpoint
+        )
+
     if resp.status_code >= 400:
         raise HTTPException(resp.status_code, resp.text)
 
@@ -491,14 +505,17 @@ def proxy_request_named(
     name_slug: str,
     body: dict = Body(...),
     db: Session = Depends(database.get_db),
+    background_tasks: BackgroundTasks = None,
     current_user: models.User = Depends(dependencies.get_current_user),
 ):
+    if background_tasks is None:
+        pass # Handle if called directly (Optional, FastAPI injects it)
     provider = _canonical_provider(provider)
     key_record = _find_key_by_name(db, provider, name_slug, current_user.id)
     if not key_record:
         raise HTTPException(404, f"No {provider} key named {name_slug} found for user")
 
-    return _proxy_request(provider, key_record, body, db, category="llm")
+    return await _proxy_request(provider, key_record, request, db, background_tasks, category="llm")
 
 
 @router.post("/{provider}")
@@ -506,6 +523,7 @@ def proxy_request_default(
     provider: str,
     body: dict = Body(...),
     db: Session = Depends(database.get_db),
+    background_tasks: BackgroundTasks = None,
     current_user: models.User = Depends(dependencies.get_current_user),
 ):
     provider = _canonical_provider(provider)
@@ -518,7 +536,7 @@ def proxy_request_default(
     if not key_record:
         raise HTTPException(404, f"No {provider} key found for user")
 
-    return _proxy_request(provider, key_record, body, db, category="llm")
+    return await _proxy_request(provider, key_record, request, db, background_tasks, category="llm")
 
 
 @router.post("/u/{provider}/{name_slug}")
@@ -529,6 +547,7 @@ def proxy_unified(
     db: Session = Depends(database.get_db),
     x_api_key: str | None = Header(default=None, convert_underscores=False),
     authorization: str | None = Header(default=None),
+    background_tasks: BackgroundTasks = None,
 ):
     provider = _canonical_provider(provider)
     key_record = _find_key_by_name(db, provider, name_slug, user_id=None)
@@ -547,7 +566,7 @@ def proxy_unified(
     if not validate_platform_key(owner, provided_key):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid API key")
 
-    return _proxy_request(provider, key_record, body, db, category="llm")
+    return await _proxy_request(provider, key_record, request, db, background_tasks, category="llm")
 
 
 @router.post("/sdk/{category}/{provider}/{name_slug}")
@@ -559,28 +578,38 @@ def proxy_unified_category(
     db: Session = Depends(database.get_db),
     x_api_key: str | None = Header(default=None, convert_underscores=False),
     authorization: str | None = Header(default=None),
+    background_tasks: BackgroundTasks = None,
 ):
     provider = _canonical_provider(provider)
+    provided_key = _extract_provided_key(x_api_key, authorization)
+    if not provided_key:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Missing API key")
+
     key_record = _find_key_by_name(db, provider, name_slug, user_id=None)
     if not key_record:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Unified key not found")
 
-    if not _provider_in_category(provider, category):
-        raise HTTPException(
-            status.HTTP_400_BAD_REQUEST,
-            f"Provider '{provider}' does not belong to category '{category}'",
-        )
-
-    provided_key = _extract_provided_key(x_api_key, authorization)
-
-    if not provided_key:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Missing API key")
-
     owner = db.query(models.User).filter(models.User.id == key_record.user_id).first()
     if not owner or not validate_platform_key(owner, provided_key):
+        # Trigger alert for failed auth if we have the owner's email
+        if owner and owner.email:
+            try:
+                # Try to get model from body if possible
+                body = asyncio.run_coroutine_threadsafe(request.json(), asyncio.get_event_loop()).result()
+            except:
+                body = {}
+            background_tasks.add_task(
+                send_api_alert_email, 
+                owner.email, 
+                provider, 
+                401, 
+                "Invalid platform API key",
+                model=body.get("model"),
+                endpoint=body.get("endpoint")
+            )
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid platform API key")
 
-    return _proxy_request(provider, key_record, body, db, category=category)
+    return await _proxy_request(provider, key_record, request, db, background_tasks, category=category)
 
 
 @router.post("/sdk/{category}/{provider}")
@@ -591,6 +620,7 @@ def proxy_unified_category_default(
     db: Session = Depends(database.get_db),
     x_api_key: str | None = Header(default=None, convert_underscores=False),
     authorization: str | None = Header(default=None),
+    background_tasks: BackgroundTasks = None,
 ):
     provider = _canonical_provider(provider)
 
@@ -604,8 +634,18 @@ def proxy_unified_category_default(
     if not provided_key:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Missing API key")
 
-    owner = get_user_for_platform_key(db, provided_key)
-    if not owner:
+    owner = get_user_for_platform_key(db, provided_key, return_user_on_invalid_key=True)
+    if not owner or not validate_platform_key(owner, provided_key):
+        if owner and owner.email:
+             background_tasks.add_task(
+                send_api_alert_email, 
+                owner.email, 
+                provider, 
+                401, 
+                "Invalid platform API key",
+                model=None,
+                endpoint=None
+            )
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid platform API key")
 
     key_record = _find_latest_key_for_user_provider(db, owner.id, provider)
@@ -615,4 +655,4 @@ def proxy_unified_category_default(
             f"No API key configured for provider '{provider}'",
         )
 
-    return _proxy_request(provider, key_record, body, db, category=category)
+    return await _proxy_request(provider, key_record, request, db, background_tasks, category=category)
